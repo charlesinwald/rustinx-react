@@ -58,9 +58,13 @@
         "fullscreen": false,
         "height": 600,
         "resizable": true,
-        "title": "tauri-react-parcel-template",
+        "title": "rustinx",
         "width": 800
       }
-    ]
+    ],
+    "systemTray": {
+      "iconPath": "icons/icon.png",
+      "iconAsTemplate": true
+    }
   }
 }
