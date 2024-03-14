@@ -3,15 +3,28 @@
     windows_subsystem = "windows"
 )]
 use nix::libc::geteuid;
-use std::{error::Error, process, thread};
-use tauri::{AppHandle, CustomMenuItem, Manager, Runtime, SystemTray, SystemTrayEvent, SystemTrayMenu};
+use std::{error::Error, process, thread, time::Duration};
+use tauri::{
+    AppHandle, CustomMenuItem, Manager, Runtime, SystemTray, SystemTrayEvent, SystemTrayMenu,
+};
+use tokio::time::interval;
 
 fn emit_event(app: AppHandle, data: &str, event_name: &str) {
     app.emit_all(event_name, data.to_string())
         .expect("failed to emit event");
 }
 
-fn main() {
+#[tauri::command]
+async fn start_emitting_events(app: AppHandle) {
+    let mut interval = interval(Duration::from_secs(5));
+    loop {
+        interval.tick().await;
+        emit_event(app.clone(), "This is a test event", "test_event");
+    }
+}
+
+#[tokio::main]
+async fn main() {
     // Check if the current user is root
     if unsafe { geteuid() == 0 } {
         println!("Running with root privileges.");
@@ -23,6 +36,7 @@ fn main() {
         .setup(|app| {
             let app_handle = app.handle();
             let tray_id = "my-tray";
+            tokio::spawn(start_emitting_events(app_handle.clone()));
             SystemTray::new()
                 .with_id(tray_id)
                 .with_menu(
