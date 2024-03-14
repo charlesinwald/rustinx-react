@@ -3,25 +3,10 @@
     windows_subsystem = "windows"
 )]
 use nix::libc::geteuid;
-use std::{error::Error, process, thread, time::Duration};
-use tauri::{
-    AppHandle, CustomMenuItem, Manager, Runtime, SystemTray, SystemTrayEvent, SystemTrayMenu,
-};
-use tokio::time::interval;
+use std::process;
+use tauri::{CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu};
 
-fn emit_event(app: AppHandle, data: &str, event_name: &str) {
-    app.emit_all(event_name, data.to_string())
-        .expect("failed to emit event");
-}
-
-#[tauri::command]
-async fn start_emitting_events(app: AppHandle) {
-    let mut interval = interval(Duration::from_secs(5));
-    loop {
-        interval.tick().await;
-        emit_event(app.clone(), "This is a test event", "test_event");
-    }
-}
+mod events_service;
 
 #[tokio::main]
 async fn main() {
@@ -36,7 +21,7 @@ async fn main() {
         .setup(|app| {
             let app_handle = app.handle();
             let tray_id = "my-tray";
-            tokio::spawn(start_emitting_events(app_handle.clone()));
+            tokio::spawn(events_service::start_emitting_events(app_handle.clone()));
             SystemTray::new()
                 .with_id(tray_id)
                 .with_menu(
@@ -44,8 +29,8 @@ async fn main() {
                         .add_item(CustomMenuItem::new("quit", "Quit"))
                         .add_item(CustomMenuItem::new("open", "Open")),
                 )
-                .on_event(move |event| {
-                    let tray_handle = app_handle.tray_handle_by_id(tray_id).unwrap();
+                .on_event(move |_event| {
+                    let _tray_handle = app_handle.tray_handle_by_id(tray_id).unwrap();
                 })
                 .build(app)?;
             Ok(())
