@@ -5,33 +5,48 @@ import Logo from "./logo.png";
 import { listen } from "@tauri-apps/api/event";
 
 function App() {
-  const [event, setEvent] = useState("");
+  const [accessEvent, setAccessEvent] = useState("");
+  const [errorEvent, setErrorEvent] = useState("");
 
   useEffect(() => {
-    // Function to handle the event
-    const handleMyEvent = (event: { payload: any }) => {
-      console.log("Data from Rust:", event.payload);
-      setEvent(event.payload);
+    const handleAccessEvent = (event) => {
+      console.log("Access Log from Rust:", event.payload);
+      setAccessEvent((prevEvent) => prevEvent + "\n" + event.payload);
     };
 
-    // Start listening for the event
-    const unlisten = listen("log_event", handleMyEvent);
+    const handleErrorEvent = (event) => {
+      console.log("Error Log from Rust:", event.payload);
+      setErrorEvent((prevEvent) => prevEvent + "\n" + event.payload);
+    };
 
-    // Cleanup listener on component unmount
+    const unlistenAccess = listen("access_event", handleAccessEvent);
+    const unlistenError = listen("error_event", handleErrorEvent);
+
     return () => {
-      unlisten.then((unlistenFn) => unlistenFn());
+      unlistenAccess.then((unlistenFn) => unlistenFn());
+      unlistenError.then((unlistenFn) => unlistenFn());
     };
   }, []);
 
   return (
     <div className="App">
       <header className="App-header">
-        <img src={Logo} className="App-logo" alt="logo" />
-        <p>Hello Parcel + React!</p>
-        <p></p>
-        <p>
-          {event === "" ? "Waiting for event from Rust..." : event}
-        </p>
+        <div className="log-container">
+          <h2 className="log-title">Access Events</h2>
+          <p className="log">
+            {accessEvent === ""
+              ? "Waiting for access events from Rust..."
+              : accessEvent}
+          </p>
+        </div>
+        <div className="log-container">
+          <h2 className="log-title">Error Events</h2>
+          <p className="log">
+            {errorEvent === ""
+              ? "Waiting for error events from Rust..."
+              : errorEvent}
+          </p>
+        </div>
       </header>
     </div>
   );

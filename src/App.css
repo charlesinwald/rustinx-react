@@ -1,5 +1,7 @@
 .App {
 	text-align: center;
+	background-color: #282828;
+	height: 100vh;
 }
 
 .App-logo {
@@ -14,15 +16,12 @@
 }
 
 .App-header {
-	background-color: #282c34;
-	min-height: 100vh;
 	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	font-size: calc(10px + 2vmin);
-	color: white;
-}
+	justify-content: space-around;
+	align-items: flex-start;
+	flex-wrap: wrap; /* Allows items to wrap if the window is too narrow */
+	background-color: #282828
+  }
 
 .App-link {
 	color: #61dafb;
@@ -39,4 +38,22 @@
 
 button {
 	font-size: calc(10px + 2vmin);
+}
+
+.log-container {
+	width: 45%; /* Adjust based on your preference */
+	min-width: 300px; /* Ensures containers don't get too small on narrow screens */
+}
+.log-title {
+	color: #ebdbb2;
+}
+
+.log {
+	max-height: 400px;
+	overflow-y: auto;
+	background-color: #3c3836;
+	padding: 10px;
+	border-radius: 5px;
+	white-space: pre-wrap; /* Keeps formatting of log messages */
+	color: #ebdbb2;
 }

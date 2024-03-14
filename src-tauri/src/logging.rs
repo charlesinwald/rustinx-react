@@ -20,8 +20,9 @@ use std;
 use std::sync::mpsc::Sender;
 
 use tauri::{AppHandle, Manager};
+use tokio::time::error;
 
-pub(crate) fn monitor_nginx_error_log(path: &str, app: AppHandle) -> std::io::Result<()> {
+pub(crate) fn monitor_nginx_log(path: &str, label: &str, app: AppHandle) -> std::io::Result<()> {
     let file = File::open(path)?;
     let mut reader = BufReader::new(file);
     let mut line = String::new();
@@ -33,7 +34,7 @@ pub(crate) fn monitor_nginx_error_log(path: &str, app: AppHandle) -> std::io::Re
             }
             Ok(_) => {
                 // Here, instead of sending through a channel, emit the event directly
-                app.emit_all("log_event", &line)
+                app.emit_all(label, &line)
                     .expect("Failed to emit log event");
                 line.clear(); // Clear the line buffer for the next read
             }
@@ -42,11 +43,17 @@ pub(crate) fn monitor_nginx_error_log(path: &str, app: AppHandle) -> std::io::Re
     }
 }
 
-// Modify the get_logs or create a similar function to start the log monitoring with AppHandle
 pub(crate) fn start_log_monitoring(app_handle: AppHandle) {
-    let log_path = "/var/log/nginx/access.log";
+    let access_log_path = "/var/log/nginx/access.log";
+    let error_log_path = "/var/log/nginx/error.log";
+    let app_handle_for_access_log = app_handle.clone();
     std::thread::spawn(move || {
-        monitor_nginx_error_log(log_path, app_handle)
+        monitor_nginx_log(access_log_path, "access_event", app_handle_for_access_log)
+            .unwrap_or_else(|e| eprintln!("Log monitoring error: {}", e));
+    });
+    let app_handle_for_error_log = app_handle;
+    std::thread::spawn(move || {
+        monitor_nginx_log(error_log_path, "error_event", app_handle_for_error_log)
             .unwrap_or_else(|e| eprintln!("Log monitoring error: {}", e));
     });
 }
