@@ -2,11 +2,14 @@
     all(not(debug_assertions), target_os = "windows"),
     windows_subsystem = "windows"
 )]
-use nix::libc::geteuid;
 use std::process;
+
+use nix::libc::geteuid;
 use tauri::{CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu};
 
 mod events_service;
+
+mod logging;
 
 #[tokio::main]
 async fn main() {
@@ -22,6 +25,7 @@ async fn main() {
             let app_handle = app.handle();
             let tray_id = "my-tray";
             tokio::spawn(events_service::start_emitting_events(app_handle.clone()));
+            logging::get_logs();
             SystemTray::new()
                 .with_id(tray_id)
                 .with_menu(
