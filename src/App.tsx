@@ -15,7 +15,7 @@ function App() {
     };
 
     // Start listening for the event
-    const unlisten = listen("test_event", handleMyEvent);
+    const unlisten = listen("log_event", handleMyEvent);
 
     // Cleanup listener on component unmount
     return () => {

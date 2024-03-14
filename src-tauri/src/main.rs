@@ -25,7 +25,7 @@ async fn main() {
             let app_handle = app.handle();
             let tray_id = "my-tray";
             tokio::spawn(events_service::start_emitting_events(app_handle.clone()));
-            logging::get_logs();
+            logging::start_log_monitoring(app_handle.clone());
             SystemTray::new()
                 .with_id(tray_id)
                 .with_menu(
