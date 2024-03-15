@@ -7,6 +7,7 @@ import { listen } from "@tauri-apps/api/event";
 function App() {
   const [accessEvent, setAccessEvent] = useState("");
   const [errorEvent, setErrorEvent] = useState("");
+  const [configEvent, setConfigEvent] = useState("");
 
   useEffect(() => {
     const handleAccessEvent = (event) => {
@@ -21,10 +22,14 @@ function App() {
 
     const unlistenAccess = listen("access_event", handleAccessEvent);
     const unlistenError = listen("error_event", handleErrorEvent);
-
+    const unlistenConfigCheck = listen("nginx_config_check", (event) => {
+      console.log("Nginx Config Check:", event.payload);
+      setConfigEvent(event.payload as string);
+    });
     return () => {
       unlistenAccess.then((unlistenFn) => unlistenFn());
       unlistenError.then((unlistenFn) => unlistenFn());
+      unlistenConfigCheck.then((unlistenFn) => unlistenFn());
     };
   }, []);
 
@@ -48,6 +53,12 @@ function App() {
           </p>
         </div>
       </header>
+      <div className="bottom-bar">
+        <button className="control-button" onClick={() => {}}>
+          Restart Nginx
+        </button>
+        <h2>{configEvent}</h2>
+      </div>
     </div>
   );
 }

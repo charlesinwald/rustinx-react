@@ -1,6 +1,7 @@
 use std::collections::VecDeque;
 
 use std::io::BufRead;
+use std::process::Command;
 use std::sync::mpsc::channel;
 
 use std::sync::mpsc::Receiver;
@@ -43,10 +44,36 @@ pub(crate) fn monitor_nginx_log(path: &str, label: &str, app: AppHandle) -> std:
     }
 }
 
+fn check_nginx_config(app: AppHandle) {
+    thread::spawn(move || loop {
+        // Execute `nginx -t` to check the configuration
+        let output = Command::new("nginx")
+            .arg("-t")
+            .output()
+            .expect("Failed to execute command");
+
+        // Prepare the message based on the command's success or failure
+        let message = if output.status.success() {
+            "Nginx configuration is valid.".to_string()
+        } else {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            format!("Nginx configuration error: {}", stderr)
+        };
+
+        // Emit the result to the frontend
+        app.emit_all("nginx_config_check", &message)
+            .expect("Failed to emit nginx config check event");
+
+        // Wait for a few seconds before checking again
+        thread::sleep(Duration::from_secs(5));
+    });
+}
+
 pub(crate) fn start_log_monitoring(app_handle: AppHandle) {
     let access_log_path = "/var/log/nginx/access.log";
     let error_log_path = "/var/log/nginx/error.log";
     let app_handle_for_access_log = app_handle.clone();
+    let app_handle_for_config_check = app_handle.clone();
     std::thread::spawn(move || {
         monitor_nginx_log(access_log_path, "access_event", app_handle_for_access_log)
             .unwrap_or_else(|e| eprintln!("Log monitoring error: {}", e));
@@ -56,4 +83,5 @@ pub(crate) fn start_log_monitoring(app_handle: AppHandle) {
         monitor_nginx_log(error_log_path, "error_event", app_handle_for_error_log)
             .unwrap_or_else(|e| eprintln!("Log monitoring error: {}", e));
     });
+    check_nginx_config(app_handle_for_config_check);
 }
