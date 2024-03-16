@@ -7,8 +7,8 @@ use std::process;
 use nix::libc::geteuid;
 use tauri::{CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu};
 
+mod commands;
 mod events_service;
-
 mod logging;
 
 #[tokio::main]
@@ -53,6 +53,8 @@ async fn main() {
             },
             _ => {}
         })
+        .invoke_handler(tauri::generate_handler![commands::restart_nginx])
+        .invoke_handler(tauri::generate_handler![commands::stop_nginx])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

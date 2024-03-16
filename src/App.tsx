@@ -3,11 +3,14 @@ import { useState, useEffect } from "react";
 import "./App.css";
 import Logo from "./logo.png";
 import { listen } from "@tauri-apps/api/event";
+import { invoke } from "@tauri-apps/api/tauri";
 
 function App() {
   const [accessEvent, setAccessEvent] = useState("");
   const [errorEvent, setErrorEvent] = useState("");
   const [configEvent, setConfigEvent] = useState("");
+  const [restartResponse, setRestartResponse] = useState("");
+  const [stopResponse, setStopResponse] = useState("");
 
   useEffect(() => {
     const handleAccessEvent = (event) => {
@@ -33,6 +36,18 @@ function App() {
     };
   }, []);
 
+  const restartNginx = async () => {
+    invoke("restart_nginx") // Changed from restart_nginx_command to restart_nginx
+      .then((response) => setRestartResponse(response))
+      .catch((error) => console.error("Error restarting Nginx:", error));
+  };
+
+  const stopNginx = async () => {
+    invoke("stop_nginx") // Changed from stop_nginx_command to stop_nginx
+      .then((response) => setStopResponse(response))
+      .catch((error) => console.error("Error stopping Nginx:", error));
+  };
+
   return (
     <div className="App">
       <header className="App-header">
@@ -54,9 +69,13 @@ function App() {
         </div>
       </header>
       <div className="bottom-bar">
-        <button className="control-button" onClick={() => {}}>
+        <button className="control-button" onClick={() => restartNginx()}>
           Restart Nginx
         </button>
+        <button className="control-button" onClick={() => stopNginx()}>
+          Stop Nginx
+        </button>
+        <h2>{restartResponse}</h2>
         <h2>{configEvent}</h2>
       </div>
     </div>

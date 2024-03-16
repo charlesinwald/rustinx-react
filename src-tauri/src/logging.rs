@@ -14,14 +14,8 @@ use std::io::BufReader;
 
 use std::fs::File;
 
-use std::io;
-
 use std;
-
-use std::sync::mpsc::Sender;
-
 use tauri::{AppHandle, Manager};
-use tokio::time::error;
 
 pub(crate) fn monitor_nginx_log(path: &str, label: &str, app: AppHandle) -> std::io::Result<()> {
     let file = File::open(path)?;
