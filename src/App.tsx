@@ -36,6 +36,18 @@ function App() {
     };
   }, []);
 
+  const confirmAndRestartNginx = async () => {
+    if (await window.confirm("Are you sure you want to restart Nginx?")) {
+      restartNginx();
+    }
+  };
+
+  const confirmAndStopNginx = async () => {
+    if (await window.confirm("Are you sure you want to stop Nginx?")) {
+      stopNginx();
+    }
+  };
+
   const restartNginx = async () => {
     invoke("restart_nginx")
       .then((response) => setRestartResponse(response))
@@ -69,10 +81,10 @@ function App() {
         </div>
       </header>
       <div className="bottom-bar">
-        <button className="control-button" onClick={() => restartNginx()}>
+        <button className="control-button" onClick={confirmAndRestartNginx}>
           Restart Nginx
         </button>
-        <button className="control-button" onClick={() => stopNginx()}>
+        <button className="control-button" onClick={confirmAndStopNginx}>
           Stop Nginx
         </button>
         <h2>{restartResponse}</h2>
