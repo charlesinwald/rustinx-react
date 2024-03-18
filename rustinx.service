@@ -4,8 +4,6 @@ Description=Rustinx for monitoring Nginx
 [Service]
 ExecStart=/usr/bin/rustinx
 Restart=always
-User=rustinx
-Group=rustinx
 
 [Install]
 WantedBy=multi-user.target
