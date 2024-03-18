@@ -2,6 +2,8 @@
 Description=Rustinx for monitoring Nginx
 
 [Service]
+Environment="DISPLAY=:0"
+Environment="XAUTHORITY=/home/username/.Xauthority"
 ExecStart=/usr/bin/rustinx
 Restart=always
 
