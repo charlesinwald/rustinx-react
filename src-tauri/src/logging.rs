@@ -1,5 +1,3 @@
-use std::collections::VecDeque;
-
 use std::io::BufRead;
 use std::process::Command;
 use std::sync::mpsc::channel;
