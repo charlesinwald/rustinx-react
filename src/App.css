@@ -82,4 +82,19 @@ button {
   .control-button:hover {
 	background-color: #504945;
   }
+
+  .status-container {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+  }
+
+  .status-icon {
+	align-self: center;
+	justify-self: center;
+  }
+
+  .status-text {
+	margin-right: 10px;
+  }
   

@@ -68,6 +68,7 @@ pub(crate) fn start_log_monitoring(app_handle: AppHandle) {
     let error_log_path = "/var/log/nginx/error.log";
     let app_handle_for_access_log = app_handle.clone();
     let app_handle_for_config_check = app_handle.clone();
+    let app_handle_for_status_check = app_handle.clone();
     std::thread::spawn(move || {
         monitor_nginx_log(access_log_path, "access_event", app_handle_for_access_log)
             .unwrap_or_else(|e| eprintln!("Log monitoring error: {}", e));
@@ -78,4 +79,22 @@ pub(crate) fn start_log_monitoring(app_handle: AppHandle) {
             .unwrap_or_else(|e| eprintln!("Log monitoring error: {}", e));
     });
     check_nginx_config(app_handle_for_config_check);
+    check_nginx_status(app_handle_for_status_check);
+}
+
+pub(crate) fn check_nginx_status(app: AppHandle) {
+    thread::spawn(move || loop {
+        let output = Command::new("systemctl")
+            .arg("is-active")
+            .arg("nginx")
+            .output()
+            .expect("Failed to execute command");
+
+        let status = String::from_utf8_lossy(&output.stdout).trim().to_string();
+
+        app.emit_all("nginx_status_check", &status)
+            .expect("Failed to emit nginx status event");
+
+        thread::sleep(Duration::from_secs(5));
+    });
 }
