@@ -854,7 +854,7 @@
   resolved "https://registry.yarnpkg.com/@swc/types/-/types-0.1.5.tgz#043b731d4f56a79b4897a3de1af35e75d56bc63a"
   integrity sha512-myfUej5naTBWnqOCc/MdVOLVjXUXtIA+NpDrDBKJtLLg2shUjBu3cZmB/85RyitKc55+lUUyl7oRfLOvkr2hsw==
 
-"@tauri-apps/api@^1.5.3":
+"@tauri-apps/api@1.5.3", "@tauri-apps/api@^1.5.3":
   version "1.5.3"
   resolved "https://registry.yarnpkg.com/@tauri-apps/api/-/api-1.5.3.tgz#f7b362b1f30aadb0a8bbeb7ae111755c0ed33d73"
   integrity sha512-zxnDjHHKjOsrIzZm6nO5Xapb/BxqUq1tc7cGkFXsFkGTsSWgCPH1D8mm0XS9weJY2OaR73I3k3S+b7eSzJDfqA==
@@ -1671,6 +1671,12 @@ svgo@^2.4.0:
     csso "^4.2.0"
     picocolors "^1.0.0"
     stable "^0.1.8"
+
+"tauri-plugin-log-api@https://github.com/tauri-apps/tauri-plugin-log#v1":
+  version "0.0.0"
+  resolved "https://github.com/tauri-apps/tauri-plugin-log#c4148c3d3085de8c78e416139fba4cfefeea48f4"
+  dependencies:
+    "@tauri-apps/api" "1.5.3"
 
 term-size@^2.2.1:
   version "2.2.1"

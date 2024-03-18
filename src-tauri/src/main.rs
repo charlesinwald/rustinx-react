@@ -6,6 +6,7 @@ use std::process;
 
 use nix::libc::geteuid;
 use tauri::{CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu};
+use tauri_plugin_log::{LogTarget};
 
 mod commands;
 mod events_service;
@@ -21,7 +22,7 @@ async fn main() {
         process::exit(1); // Exit if not root
     }
     tauri::Builder::default()
-        .setup(|app| {
+            .setup(|app| {
             let app_handle = app.handle();
             let tray_id = "my-tray";
             tokio::spawn(events_service::start_emitting_events(app_handle.clone()));
@@ -53,8 +54,12 @@ async fn main() {
             },
             _ => {}
         })
-        .invoke_handler(tauri::generate_handler![commands::restart_nginx])
-        .invoke_handler(tauri::generate_handler![commands::stop_nginx])
+        .plugin(tauri_plugin_log::Builder::default().targets([
+            LogTarget::LogDir,
+            LogTarget::Stdout,
+            LogTarget::Webview,
+        ]).build())
+        .invoke_handler(tauri::generate_handler![commands::restart_nginx, commands::stop_nginx])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

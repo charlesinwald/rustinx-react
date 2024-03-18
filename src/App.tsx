@@ -37,13 +37,13 @@ function App() {
   }, []);
 
   const restartNginx = async () => {
-    invoke("restart_nginx") // Changed from restart_nginx_command to restart_nginx
+    invoke("restart_nginx")
       .then((response) => setRestartResponse(response))
       .catch((error) => console.error("Error restarting Nginx:", error));
   };
 
   const stopNginx = async () => {
-    invoke("stop_nginx") // Changed from stop_nginx_command to stop_nginx
+    invoke("stop_nginx")
       .then((response) => setStopResponse(response))
       .catch((error) => console.error("Error stopping Nginx:", error));
   };
