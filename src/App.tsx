@@ -48,6 +48,12 @@ function App() {
     }
   };
 
+  const startNginx = async () => {
+    invoke("start_nginx")
+      .then((response) => console.log("Nginx started:", response))
+      .catch((error) => console.error("Error starting Nginx:", error));
+  }
+
   const restartNginx = async () => {
     invoke("restart_nginx")
       .then((response) => setRestartResponse(response))
@@ -81,6 +87,9 @@ function App() {
         </div>
       </header>
       <div className="bottom-bar">
+        <button className="control-button" onClick={startNginx}>
+          Start Nginx
+        </button>
         <button className="control-button" onClick={confirmAndRestartNginx}>
           Restart Nginx
         </button>
