@@ -1,5 +1,9 @@
 # Rustinx
 ### A simple and easy to use GUI for Nginx.
+- View Access and Error Events from Nginx in realtime
+- Start, stop or restart nginx from the GUI
+- Real time monitoring of Nginx configuration validity
+- View Nginx state (inactive, active)
 <!-- Screenshot -->
 ![Rustinx](https://i.imgur.com/ty9oqBo.png)
 ## Linux Installation and Usage Instructions
