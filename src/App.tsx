@@ -97,7 +97,7 @@ function App() {
           </svg>
         );
       default:
-        return <span>Checking...</span>;
+        return <span></span>;
     }
   };
 
@@ -112,7 +112,7 @@ function App() {
           <h2 className="log-title">Access Events</h2>
           <p className="log">
             {accessEvent === ""
-              ? "Waiting for access events from Rust..."
+              ? "Waiting for access events from Nginx..."
               : accessEvent}
           </p>
         </div>
@@ -120,7 +120,7 @@ function App() {
           <h2 className="log-title">Error Events</h2>
           <p className="log">
             {errorEvent === ""
-              ? "Waiting for error events from Rust..."
+              ? "Waiting for error events from Nginx..."
               : errorEvent}
           </p>
         </div>
@@ -138,7 +138,9 @@ function App() {
         <h2>{restartResponse}</h2>
         <h2>{configEvent}</h2>
         <div className="status-container">
-          <p className="status-text">Status: <b>{capitalizeFirstLetter(nginxStatus)}</b></p>
+          <p className="status-text">
+            Status: <b>{capitalizeFirstLetter(nginxStatus)}</b>
+          </p>
           <div>{getStatusIcon(nginxStatus)}</div>
         </div>
       </div>
