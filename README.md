@@ -45,6 +45,8 @@ This application is available as a `.AppImage` and `.deb` package. You can choos
 3. Install the package using the following command:
 
    ```bash
+   sudo apt-get update
+   sudo apt-get install libgtk-3-dev
    sudo dpkg -i rustinx_0.1.0_amd64.deb
    ```
     If there are any missing dependencies, you may need to run:
