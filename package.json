@@ -2,13 +2,12 @@
 	"name": "tauri-react-parcel-template",
 	"version": "0.0.1",
 	"description": "build tauri apps with parcel bundler ⚡",
-	"main": "index.js",
 	"scripts": {
 		"tauri": "tauri",
 		"tauri:dev": "tauri dev",
 		"tauri:build": "tauri build",
 		"dev": "parcel index.html",
-		"build": "parcel build"
+		"build": "parcel build index.html"
 	},
 	"keywords": [
 		"tauri",

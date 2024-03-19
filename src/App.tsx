@@ -138,7 +138,7 @@ function App() {
         <h2>{restartResponse}</h2>
         <h2>{configEvent}</h2>
         <div className="status-container">
-          <p className="status-text">Status: {capitalizeFirstLetter(nginxStatus)}</p>
+          <p className="status-text">Status: <b>{capitalizeFirstLetter(nginxStatus)}</b></p>
           <div>{getStatusIcon(nginxStatus)}</div>
         </div>
       </div>
