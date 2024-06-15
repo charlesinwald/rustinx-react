@@ -1,41 +1,35 @@
-use gtk::ButtonsType;
-
-use gtk::MessageType;
-
-use gtk::DialogFlags;
-
-use gtk::Window;
-
-use gtk::MessageDialog;
-
+#[cfg(unix)]
 use nix::libc::geteuid;
+// #[cfg(windows)]
+// use std::os::windows::fs::MetadataExt;
 
-use gtk::prelude::*;
-use std::os::unix::process::CommandExt;
 use std::process;
+use tauri::Window;
 
-pub(crate) fn check_sudo() {
-    // Check if the current user is root
-    if unsafe { geteuid() == 0 } {
-        println!("Running with root privileges.");
-    } else {
-        eprintln!("This program needs to be run as root. Please use sudo.");
+pub(crate) async fn check_sudo(window: &Window) {
+    #[cfg(unix)]
+    {
+        // Check if the current user is root on Unix-like systems
+        if unsafe { geteuid() } == 0 {
+            println!("Running with root privileges.");
+        } else {
+            eprintln!("This program needs to be run as root. Please use sudo.");
 
-        // Initialize GTK
-        gtk::init().expect("Failed to initialize GTK.");
+            // Show the confirmation dialog using Tauri's dialog API
+            tauri::api::dialog::confirm(
+                Some(window),
+                "Error",
+                "This program needs to be run as root. Please use sudo.",
+                |response| {
+                    if response {
+                        println!("User acknowledged the need for root permissions.");
+                    } else {
+                        println!("User ignored the root permissions warning.");
+                    }
+                },
+            );
 
-        // Create the dialog
-        let dialog = MessageDialog::new(
-            None::<&Window>,
-            DialogFlags::empty(),
-            MessageType::Error,
-            ButtonsType::Ok,
-            "This program needs to be run as root. Please use sudo.",
-        );
-
-        dialog.run(); // Show the dialog
-        dialog.close();
-
-        process::exit(1); // Exit if not root
+            process::exit(1); // Exit if not root
+        }
     }
 }

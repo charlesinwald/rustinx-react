@@ -97,3 +97,8 @@ npm run tauri:build
 #yarn
 yarn tauri:build
 ```
+
+# Windows
+- Ensure Visual C++ is installed 
+https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170
+- Ensure Rust is installed
