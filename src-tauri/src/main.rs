@@ -12,9 +12,9 @@ mod util;
 
 #[tokio::main]
 async fn main() {
-    util::check_sudo();
     tauri::Builder::default()
     .setup(|app| {
+        util::check_sudo(&app.get_window("main").unwrap());
         let app_handle = app.handle();
         let tray_id = "my-tray";
         tokio::spawn(events_service::start_emitting_events(app_handle.clone()));
