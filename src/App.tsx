@@ -1,9 +1,16 @@
 import React from "react";
 import { useState, useEffect } from "react";
-import "./App.css";
+// import "./App.css";
+import "./style.css";
 import Logo from "./logo.png";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/tauri";
+import { 
+  SideMenu,
+  Header,
+  Page
+} from "./components/index";
+
 
 function App() {
   const [accessEvent, setAccessEvent] = useState("");
@@ -13,6 +20,12 @@ function App() {
   const [stopResponse, setStopResponse] = useState("");
   const [nginxStatus, setNginxStatus] = useState("Checking...");
 
+  const [isRed, setIsRed] = useState(true);
+
+  const [page, setPage] = useState<number>(0); 
+  const changePage = (newPage: number): void => {
+    setPage(newPage);
+  };
   useEffect(() => {
     const handleAccessEvent = (event) => {
       console.log("Access Log from Rust:", event.payload);
@@ -105,9 +118,16 @@ function App() {
     return string.charAt(0).toUpperCase() + string.slice(1);
   };
 
+
+  const sideMenuSettings = [
+    { name: "Setting 1", action: () => console.log("Setting 1 clicked") },
+    { name: "Setting 2", action: () => console.log("Setting 2 clicked") },
+  ];
+
+ 
   return (
     <div className="App">
-      <header className="App-header">
+      {/* <header className="App-header">
         <div className="log-container">
           <h2 className="log-title">Access Events</h2>
           <p className="log">
@@ -143,7 +163,23 @@ function App() {
           </p>
           <div>{getStatusIcon(nginxStatus)}</div>
         </div>
+      </div> */}
+
+      <SideMenu changePage={changePage} />
+
+      <div className="main-wrapper">
+        <Header />
+        {/* <header className="header"> */}
+          {/* <div>aaa</div>
+          <div>bbbb</div> */}
+        {/* </header> */}
+        <div className="content">
+          {page === 0 && <Page/>}
+          {page === 1 && <div>Access Event Content</div>}
+          {page === 2 && <div>Error Event Content</div>}
+        </div>
       </div>
+
     </div>
   );
 }
