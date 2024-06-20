@@ -161,6 +161,7 @@ function App() {
           <p className="status-text">
             Status: <b>{capitalizeFirstLetter(nginxStatus)}</b>
           </p>
+          {/* Adding another indicator for HTTPS */}
           <div>{getStatusIcon(nginxStatus)}</div>
         </div>
       </div> */}
