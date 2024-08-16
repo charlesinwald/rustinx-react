@@ -54,7 +54,9 @@ async fn main() {
     .invoke_handler(tauri::generate_handler![
         commands::restart_nginx,
         commands::stop_nginx,
-        commands::start_nginx
+        commands::start_nginx,
+        commands::get_nginx_conf_path,
+        commands::open_file,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

@@ -98,3 +98,9 @@ button {
 	margin-right: 10px;
   }
   
+.open-file-link {
+	text-decoration: underline;
+	cursor: pointer;
+	text-underline-offset: 2px;
+	color: #ebdbb2;
+}

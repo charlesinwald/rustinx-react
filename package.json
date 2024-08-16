@@ -1,7 +1,7 @@
 {
-	"name": "tauri-react-parcel-template",
+	"name": "rustinx",
 	"version": "0.0.1",
-	"description": "build tauri apps with parcel bundler ⚡",
+	"description": "Nginx Server Dashboard",
 	"scripts": {
 		"tauri": "tauri",
 		"tauri:dev": "tauri dev",
@@ -19,7 +19,7 @@
 		"macos",
 		"linux"
 	],
-	"author": "Henry Ansah",
+	"author": "Charles Inwald",
 	"license": "ISC",
 	"devDependencies": {
 		"@tauri-apps/cli": "^1.1.1",

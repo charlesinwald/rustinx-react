@@ -1,9 +1,10 @@
 import React from "react";
 import { useState, useEffect } from "react";
 import "./App.css";
-import Logo from "./logo.png";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/tauri";
+import { Command } from "@tauri-apps/api/shell";
+import { platform } from "@tauri-apps/api/os";
 
 function App() {
   const [accessEvent, setAccessEvent] = useState("");
@@ -12,6 +13,7 @@ function App() {
   const [restartResponse, setRestartResponse] = useState("");
   const [stopResponse, setStopResponse] = useState("");
   const [nginxStatus, setNginxStatus] = useState("Checking...");
+  const [nginxConfigPath, setNginxConfigPath] = useState("");
 
   useEffect(() => {
     const handleAccessEvent = (event) => {
@@ -72,6 +74,16 @@ function App() {
       .catch((error) => console.error("Error stopping Nginx:", error));
   };
 
+  async function fetchNginxConfPath() {
+    try {
+      const confPath = await invoke<string>("get_nginx_conf_path");
+      console.log(`NGINX configuration file path: ${confPath}`);
+      setNginxConfigPath(confPath);
+    } catch (error) {
+      console.error("Error fetching NGINX configuration path:", error);
+    }
+  }
+
   const getStatusIcon = (status) => {
     switch (status) {
       case "active":
@@ -101,9 +113,20 @@ function App() {
     }
   };
 
+  async function openFile(filePath: string) {
+    try {
+        await invoke('open_file', { filePath });
+        console.log(`Opened file: ${filePath}`);
+    } catch (error) {
+        console.error('Failed to open file:', error);
+    }
+}
+
   const capitalizeFirstLetter = (string) => {
     return string.charAt(0).toUpperCase() + string.slice(1);
   };
+
+  fetchNginxConfPath();
 
   return (
     <div className="App">
@@ -136,7 +159,15 @@ function App() {
           Stop Nginx
         </button>
         <h2>{restartResponse}</h2>
-        <h2>{configEvent}</h2>
+        <div>
+          <h2>{configEvent}</h2>
+          <p
+            className="open-file-link"
+            onClick={() => openFile(nginxConfigPath)}
+          >
+            Open Config {nginxConfigPath}
+          </p>
+        </div>
         <div className="status-container">
           <p className="status-text">
             Status: <b>{capitalizeFirstLetter(nginxStatus)}</b>

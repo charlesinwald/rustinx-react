@@ -15,6 +15,9 @@
       "all": true,
       "dialog": {
         "confirm": true
+      },
+      "shell": {
+        "open": true
       }
     },
     "bundle": {
