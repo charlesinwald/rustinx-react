@@ -1,0 +1,58 @@
+.sidebar {
+    width: 20vw;
+    height: 100vh;
+    background-color: #3c3836; /* Matches the log background color */
+    color: #ebdbb2; /* Matches the text color used in logs */
+    padding: 20px;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  
+  .sidebar-title {
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+    color: #ebdbb2; /* Matches the log title color */
+  }
+  
+  .sidebar-list {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .sidebar-item {
+    margin-bottom: 15px;
+  }
+  
+  .sidebar-link {
+    background: none;
+    border: none;
+    color: #ebdbb2; /* Matches the text color used in logs */
+    font-size: 1rem;
+    text-align: left;
+    cursor: pointer;
+    width: 100%;
+    padding: 10px;
+    border-radius: 5px;
+    transition: background-color 0.2s ease;
+    display: block;
+    text-decoration: none; /* Removes underline for buttons */
+  }
+  
+  .sidebar-link:hover {
+    background-color: #504945; /* Matches the hover effect of control buttons */
+  }
+  
+  .sidebar-link:focus {
+    outline: none;
+    background-color: #7c6f64; /* Matches the control button color */
+  }
+  
+  .sidebar-link:active {
+    background-color: #665c54; /* Slightly darker for active state */
+  }
+  

@@ -1,6 +1,6 @@
 {
 	"name": "rustinx",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"description": "Nginx Server Dashboard",
 	"scripts": {
 		"tauri": "tauri",

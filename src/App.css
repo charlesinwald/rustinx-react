@@ -104,3 +104,7 @@ button {
 	text-underline-offset: 2px;
 	color: #ebdbb2;
 }
+
+.main-content {
+	padding: 20rem;
+}
