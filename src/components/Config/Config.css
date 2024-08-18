@@ -1,0 +1,42 @@
+.config-container {
+    background-color: #3c3836;
+    color: #ebdbb2;
+    padding: 20px;
+    border-radius: 8px;
+    margin: auto;
+    max-width: 800px;
+    overflow: auto;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  }
+  
+  .config-title {
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+    color: #8ec07c;
+  }
+  
+  .config-section {
+    margin-bottom: 20px;
+  }
+  
+  .config-subtitle {
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+    color: #d79921;
+  }
+  
+  .config-list {
+    background-color: #504945;
+    padding: 15px;
+    border-radius: 5px;
+    list-style-type: none;
+    margin: 0;
+    overflow-y: scroll;
+    max-height: 50vh;
+  }
+  
+  .config-list li {
+    margin: 5px 0;
+    font-size: 1rem;
+  }
+  

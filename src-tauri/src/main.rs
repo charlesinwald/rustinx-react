@@ -9,6 +9,7 @@ mod commands;
 mod events_service;
 mod logging;
 mod util;
+mod config;
 
 #[tokio::main]
 async fn main() {
@@ -57,6 +58,7 @@ async fn main() {
         commands::start_nginx,
         commands::get_nginx_conf_path,
         commands::open_file,
+        config::get_nginx_version,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
