@@ -1,0 +1,30 @@
+.graph-container {
+    background-color: #3c3836;
+    color: #ebdbb2;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 20px 0;
+    max-width: 800px;
+    overflow: auto;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  }
+  
+  .controls {
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+  }
+  
+  .controls label {
+    margin-right: 10px;
+    color: #8ec07c;
+  }
+  
+  .controls select {
+    padding: 5px;
+    background-color: #504945;
+    color: #8ec07c;
+    border: 1px solid #8ec07c;
+    border-radius: 4px;
+  }
+  

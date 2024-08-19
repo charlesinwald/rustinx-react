@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./SystemMetrics.css";
 import { invoke } from "@tauri-apps/api/tauri";
+import SystemMetricsGraph from "./SystemMetricsGraph";
 
 const SystemMetrics: React.FC = () => {
   const [cpuUsage, setCpuUsage] = useState<number>(0);
@@ -36,6 +37,7 @@ const SystemMetrics: React.FC = () => {
         <h3>Memory Usage</h3>
         <p>{((usedMemory / totalMemory) * 100).toFixed(2)}% ({usedMemory / 1024} MB / {totalMemory / 1024} MB)</p>
       </div>
+      <SystemMetricsGraph />
     </div>
   );
 };

@@ -10,7 +10,7 @@
     "productName": "rustinx",
     "version": "0.1.2"
   },
-  "tauri": {
+  "tauri": {    
     "allowlist": {
       "all": true,
       "dialog": {
@@ -52,6 +52,7 @@
         "digestAlgorithm": "sha256",
         "timestampUrl": ""
       }
+
     },
     "security": {
       "csp": null

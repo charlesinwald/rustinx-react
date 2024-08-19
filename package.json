@@ -31,7 +31,9 @@
 		"@tauri-apps/plugin-log": "https://github.com/tauri-apps/tauri-plugin-log#v2",
 		"@types/react": "^18.0.21",
 		"@types/react-dom": "^18.0.6",
+		"chart.js": "^4.4.3",
 		"react": "^18.2.0",
+		"react-chartjs-2": "^5.2.0",
 		"react-dom": "^18.2.0"
 	}
 }
