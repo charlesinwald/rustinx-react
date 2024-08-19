@@ -58,6 +58,7 @@ async fn main() {
         commands::start_nginx,
         commands::get_nginx_conf_path,
         commands::open_file,
+        commands::get_system_metrics,
         config::get_nginx_version,
     ])
     .run(tauri::generate_context!())

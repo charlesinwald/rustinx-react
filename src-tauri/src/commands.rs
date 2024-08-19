@@ -1,4 +1,5 @@
 use log::{info, warn};
+use sysinfo::System;
 use std::process::Command;
 use std::env::consts::OS;
 
@@ -89,4 +90,21 @@ pub(crate) fn open_file(file_path: String) -> Result<(), String> {
         }
         Err(e) => Err(format!("Failed to execute command: {}", e)),
     }
+}
+
+#[tauri::command]
+pub(crate) fn get_system_metrics() -> Result<(f32, u64, u64), String> {
+    let mut sys = System::new_all();
+
+    // Refresh system to get updated information
+    sys.refresh_all();
+
+    // Calculate total CPU usage
+    let cpu_usage = sys.global_cpu_usage();
+
+    // Get total and available memory
+    let total_memory = sys.total_memory();
+    let used_memory = sys.used_memory();
+
+    Ok((cpu_usage, total_memory, used_memory))
 }

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
+import SystemMetrics from "./SystemMetrics/SystemMetrics";
 
 function ControlPanel() {
   const [restartResponse, setRestartResponse] = useState("");
@@ -34,9 +35,6 @@ function ControlPanel() {
       .catch((error) => console.error("Error stopping Nginx:", error));
   };
 
-
-
-
   return (
     <div>
       <button className="control-button" onClick={startNginx}>
@@ -49,7 +47,7 @@ function ControlPanel() {
         Stop Nginx
       </button>
       <h2>{restartResponse}</h2>
-
+      <SystemMetrics />
     </div>
   );
 }

@@ -1,0 +1,32 @@
+.metrics-container {
+    background-color: #3c3836;
+    color: #ebdbb2;
+    padding: 20px;
+    border-radius: 8px;
+    margin: auto;
+    max-width: 800px;
+    overflow: auto;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  }
+  
+  .metrics-title {
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+    color: #8ec07c;
+  }
+  
+  .metric {
+    margin-bottom: 20px;
+  }
+  
+  .metric h3 {
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+    color: #d79921;
+  }
+  
+  .metric p {
+    font-size: 1.1rem;
+    color: #ebdbb2;
+  }
+  
