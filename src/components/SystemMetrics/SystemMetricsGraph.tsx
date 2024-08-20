@@ -28,7 +28,7 @@ const SystemMetricsGraph: React.FC = () => {
   const [ramData, setRamData] = useState<number[]>([]);
   const [labels, setLabels] = useState<string[]>([]);
   const [intervalTime, setIntervalTime] = useState<number>(5000); // Default to 1 second
-  const [isRelative, setIsRelative] = useState<boolean>(true); // Toggle for relative or absolute values
+  const [isRelative, setIsRelative] = useState<boolean>(false); // Toggle for relative or absolute values
 
   useEffect(() => {
     const fetchMetrics = () => {

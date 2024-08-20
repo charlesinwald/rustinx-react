@@ -7,16 +7,19 @@ const SystemMetrics: React.FC = () => {
   const [cpuUsage, setCpuUsage] = useState<number>(0);
   const [totalMemory, setTotalMemory] = useState<number>(0);
   const [usedMemory, setUsedMemory] = useState<number>(0);
+  const [tasks, setTasks] = useState<number>(0);
 
   useEffect(() => {
-    const fetchMetrics = () => {
-      invoke<[number, number, number]>("get_system_metrics")
-        .then(([cpu, total, used]) => {
-          setCpuUsage(cpu);
-          setTotalMemory(total);
-          setUsedMemory(used);
-        })
-        .catch((error) => console.error("Error fetching system metrics:", error));
+    const fetchMetrics = async () => {
+      try {
+        const [cpu, totalMem, usedMem, tasks] = await invoke<[number, number, number, number]>("get_system_metrics");
+        setCpuUsage(cpu);
+        setTotalMemory(totalMem);
+        setUsedMemory(usedMem);
+        setTasks(tasks);
+      } catch (error) {
+        console.error("Failed to fetch system metrics:", error);
+      }
     };
 
     // Fetch metrics every second
@@ -36,6 +39,10 @@ const SystemMetrics: React.FC = () => {
       <div className="metric">
         <h3>Memory Usage</h3>
         <p>{((usedMemory / totalMemory) * 100).toFixed(2)}% ({usedMemory / 1024} MB / {totalMemory / 1024} MB)</p>
+      </div>
+      <div className="metric">
+        <h3>Active Tasks/Workers</h3>
+        <p>{tasks}</p>
       </div>
       <SystemMetricsGraph />
     </div>

@@ -27,10 +27,13 @@
     border: 1px solid #8ec07c;
     border-radius: 4px;
     appearance: none;
+    -moz-appearance:none;
+    -webkit-appearance:none;
   }
   
   .controls select option {
     background-color: #504945 !important;
+    background: #504945 !important;
     color: #8ec07c !important;
     appearance: none !important;
     -moz-appearance:none !important;

@@ -13,6 +13,7 @@ mod util;
 
 #[tokio::main]
 async fn main() {
+    let devtools = devtools::init();
     tauri::Builder::default()
         .setup(|app| {
             util::check_sudo(&app.get_window("main").unwrap());
@@ -47,11 +48,12 @@ async fn main() {
             },
             _ => {}
         })
-        .plugin(
-            tauri_plugin_log::Builder::default()
-                .targets([LogTarget::LogDir, LogTarget::Stdout, LogTarget::Webview])
-                .build(),
-        )
+        .plugin(devtools)
+        // .plugin(
+        //     tauri_plugin_log::Builder::default()
+        //         .targets([LogTarget::LogDir, LogTarget::Stdout, LogTarget::Webview])
+        //         .build(),
+        // )
         .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
             let window = app.get_window("main").unwrap();
             window.set_focus().unwrap();

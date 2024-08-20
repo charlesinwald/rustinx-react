@@ -93,7 +93,7 @@ pub(crate) fn open_file(file_path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub(crate) fn get_system_metrics() -> Result<(f32, u64, u64), String> {
+pub(crate) fn get_system_metrics() -> Result<(f32, u64, u64, usize), String> {
     let mut sys = System::new_all();
 
     // Refresh system to get updated information
@@ -102,9 +102,17 @@ pub(crate) fn get_system_metrics() -> Result<(f32, u64, u64), String> {
     // Calculate total CPU usage
     let cpu_usage = sys.global_cpu_usage();
 
-    // Get total and available memory
+    // Get total and used memory
     let total_memory = sys.total_memory();
     let used_memory = sys.used_memory();
 
-    Ok((cpu_usage, total_memory, used_memory))
+    // Get the number of running processes (tasks/workers)
+    let num_tasks = sys.processes()
+        .values()
+        .filter(|process| {
+            let name = process.name().to_string_lossy().to_ascii_lowercase();
+            name.contains("nginx")
+        })
+        .count();
+    Ok((cpu_usage, total_memory, used_memory, num_tasks))
 }
