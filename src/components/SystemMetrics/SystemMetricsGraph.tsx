@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Line } from "react-chartjs-2";
-import { Chart, LineElement, PointElement, LinearScale, Title, CategoryScale, Legend, Tooltip } from "chart.js";
-import zoomPlugin from "chartjs-plugin-zoom";
+import { Chart, LineElement, PointElement, LinearScale, Title, CategoryScale, Legend } from "chart.js";
 import { invoke } from "@tauri-apps/api/tauri";
 import "./SystemMetricsGraph.css";
 
-Chart.register(LineElement, PointElement, LinearScale, Title, CategoryScale, Legend, Tooltip, zoomPlugin);
+Chart.register(LineElement, PointElement, LinearScale, Title, CategoryScale, Legend);
 
 const SystemMetricsGraph: React.FC = () => {
   const [cpuData, setCpuData] = useState<number[]>([]);
@@ -63,32 +62,11 @@ const SystemMetricsGraph: React.FC = () => {
         beginAtZero: true,
         max: 100,
       },
-      x: {
-        type: 'time',
-        time: {
-          unit: 'second',
-        },
-      },
     },
     plugins: {
       legend: {
         display: true,
         position: "top",
-      },
-      zoom: {
-        pan: {
-          enabled: true,
-          mode: "x", // Allow panning only in the x-axis
-        },
-        zoom: {
-          wheel: {
-            enabled: true, // Enable zooming with the mouse wheel
-          },
-          pinch: {
-            enabled: true, // Enable zooming with pinch gestures
-          },
-          mode: "x", // Allow zooming only in the x-axis
-        },
       },
     },
   };
