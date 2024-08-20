@@ -41,3 +41,42 @@
     background-color: #3c3836 !important;
     color: #8ec07c !important;
   }
+
+  .controls input[type="checkbox"] {
+    appearance: none;
+    background-color: #504945;
+    border: 1px solid #8ec07c;
+    padding: 9px;
+    border-radius: 4px;
+    display: inline-block;
+    position: relative;
+    cursor: pointer;
+    margin-left: 1rem;
+    margin-right: 0.25rem;
+  }
+  
+  .controls input[type="checkbox"]:checked {
+    background-color: #8ec07c;
+    border-color: #8ec07c;
+  }
+  
+  .controls input[type="checkbox"]:checked::after {
+    content: '✓'; /* Checkmark */
+    font-size: 14px;
+    color: #3c3836;
+    position: absolute;
+    top: 0;
+    left: 2px;
+  }
+  
+  .controls input[type="checkbox"]:hover {
+    background-color: #665c54;
+    border-color: #8ec07c;
+  }
+  
+  .controls label[for="relativeMode"] {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-size: 16px;
+  }
