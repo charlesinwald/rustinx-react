@@ -26,5 +26,18 @@
     color: #8ec07c;
     border: 1px solid #8ec07c;
     border-radius: 4px;
+    appearance: none;
   }
   
+  .controls select option {
+    background-color: #504945 !important;
+    color: #8ec07c !important;
+    appearance: none !important;
+    -moz-appearance:none !important;
+    -webkit-appearance:none !important;
+  }
+
+  .controls select option:hover {
+    background-color: #3c3836 !important;
+    color: #8ec07c !important;
+  }
