@@ -1,0 +1,56 @@
+name: Tauri Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  tauri-build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        platform: [macos-latest, ubuntu-latest, windows-latest]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16 # Specify your Node.js version here
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          profile: minimal
+
+      - name: Install dependencies
+        run: yarn install # or npm install
+
+      - name: Cache Rust build
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Install Tauri dependencies
+        run: yarn tauri deps install # or npm run tauri deps install
+
+      - name: Build Tauri app
+        run: yarn tauri build # or npm run tauri build
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: tauri-app
+          path: src-tauri/target/release/bundle/ # Path to your built app
