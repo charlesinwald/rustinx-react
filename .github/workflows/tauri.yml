@@ -33,6 +33,7 @@ jobs:
           profile: minimal
 
       - name: Enable Ubuntu Repositories and Install Dependencies
+        if: matrix.platform == 'ubuntu-latest'
         run: |
           sudo add-apt-repository universe
           sudo add-apt-repository multiverse
@@ -43,7 +44,8 @@ jobs:
             curl \
             libssl-dev \
             libwebkit2gtk-4.0-dev \
-            pkg-config
+            pkg-config \
+            libappindicator3-dev  # Install the appindicator library
 
       - name: Install dependencies
         run: yarn install # or npm install
@@ -59,8 +61,12 @@ jobs:
       - name: Build Tauri app
         run: yarn tauri build # or npm run tauri build
 
+      - name: List the contents of the bundle directory
+        run: ls -alh src-tauri/target/release/bundle/
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
           name: tauri-app
-          path: src-tauri/target/release/bundle/ # Path to your built app
+          path: src-tauri/target/release/bundle/
+          if-no-files-found: warn
