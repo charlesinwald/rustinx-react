@@ -43,9 +43,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
 
-      - name: Install Tauri dependencies
-        run: yarn tauri deps install # or npm run tauri deps install
-
       - name: Build Tauri app
         run: yarn tauri build # or npm run tauri build
 
