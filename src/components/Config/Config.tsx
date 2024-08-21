@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./Config.css";
 import { invoke } from "@tauri-apps/api/tauri";
+import { NGINX_BUILD_OPTIONS, NginxBuildOption } from "./arguments";
 
 const Config: React.FC = () => {
   const [nginxConfig, setNginxConfig] = useState<{
@@ -29,10 +30,9 @@ const Config: React.FC = () => {
       line.includes("configure arguments:")
     );
     const configureArgs = configureArgsLine
-      ? configureArgsLine
-          .replace("configure arguments: ", "")
-          .split(" ")
-          .filter((arg) => arg !== "")
+      ? parseConfigureArgs(
+          configureArgsLine.replace("configure arguments: ", "")
+        )
       : [];
 
     return {
@@ -41,6 +41,67 @@ const Config: React.FC = () => {
       configureArgs,
       tlsSupport,
     };
+  };
+
+  // Helper function to correctly parse arguments
+  const parseConfigureArgs = (argsLine: string): string[] => {
+    const args: string[] = [];
+    let currentArg = "";
+    let insideQuotes = false;
+
+    for (let i = 0; i < argsLine.length; i++) {
+      const char = argsLine[i];
+
+      if (char === "'") {
+        insideQuotes = !insideQuotes; // Toggle insideQuotes flag
+      } else if (char === " " && !insideQuotes) {
+        if (currentArg) {
+          args.push(currentArg);
+          currentArg = "";
+        }
+      } else {
+        currentArg += char;
+      }
+    }
+
+    if (currentArg) {
+      args.push(currentArg);
+    }
+
+    // If there are nested options like --with-cc-opt='-g -O2 ...', split them further
+    return args.flatMap((arg) => {
+      if (arg.includes("=") && arg.includes("'")) {
+        const [option, nestedArgs] = arg.split("=");
+        if (
+          nestedArgs &&
+          nestedArgs.startsWith("'") &&
+          nestedArgs.endsWith("'")
+        ) {
+          const cleanedArgs = nestedArgs.slice(1, -1); // Remove surrounding quotes
+          return [option, ...cleanedArgs.split(" ")];
+        }
+      }
+      return arg;
+    });
+  };
+
+  const getArgumentDescription = (arg: string): string => {
+    for (const [key, value] of Object.entries(NGINX_BUILD_OPTIONS)) {
+      if (arg.startsWith(key)) {
+        console.log(arg, value);
+        if (typeof value === "string") {
+          return value;
+        } else if (typeof value === "object") {
+          console.log(arg, value);
+          const specificArg = arg.replace(key, "").trim();
+          console.log("specificArg", specificArg);
+          return (
+            value[specificArg] || `${specificArg}: No description available.`
+          );
+        }
+      }
+    }
+    return "No description available.";
   };
 
   if (!nginxConfig) {
@@ -52,8 +113,7 @@ const Config: React.FC = () => {
       <h2 className="config-title">NGINX Configuration</h2>
       <div className="config-section">
         <h3 className="config-subtitle">Version</h3>
-        <p>
-            {nginxConfig.version.replace("nginx version: nginx/", "")}</p>
+        <p>{nginxConfig.version.replace("nginx version: nginx/", "")}</p>
       </div>
       <div className="config-section">
         <h3 className="config-subtitle">Build Information</h3>
@@ -67,7 +127,14 @@ const Config: React.FC = () => {
         <h3 className="config-subtitle">Arguments</h3>
         <ul className="config-list">
           {nginxConfig.configureArgs.map((arg, index) => (
-            <li key={index}>{arg}</li>
+            <li key={index} className="config-list-item">
+              <span className="tooltip">
+                {arg}
+                <span className="tooltip-text">
+                  {getArgumentDescription(arg)}
+                </span>
+              </span>
+            </li>
           ))}
         </ul>
       </div>
