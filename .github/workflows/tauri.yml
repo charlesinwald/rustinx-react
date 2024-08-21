@@ -14,7 +14,7 @@ jobs:
 
     strategy:
       matrix:
-        platform: [ubuntu-latest]
+        platform: [macos-latest, ubuntu-latest, windows-latest]
 
     steps:
       - name: Checkout code
@@ -32,15 +32,19 @@ jobs:
           override: true
           profile: minimal
 
-      - name: Install GTK and related dependencies on Linux
+      - name: Enable Ubuntu Repositories and Install Dependencies
         if: matrix.platform == 'ubuntu-latest'
-        run: sudo apt-get update && sudo apt-get install -y \
-          libgtk-3-dev \
-          build-essential \
-          curl \
-          libssl-dev \
-          libwebkit2gtk-4.0-dev \
-          pkg-config
+        run: |
+          sudo add-apt-repository universe
+          sudo add-apt-repository multiverse
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgtk-3-dev \
+            build-essential \
+            curl \
+            libssl-dev \
+            libwebkit2gtk-4.0-dev \
+            pkg-config
 
       - name: Install dependencies
         run: yarn install # or npm install
