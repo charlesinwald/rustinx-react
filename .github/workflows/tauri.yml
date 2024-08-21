@@ -11,10 +11,12 @@ on:
 jobs:
   tauri-build:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
 
     strategy:
       matrix:
-        platform: [macos-latest, ubuntu-latest, windows-latest]
+        platform: [ubuntu-latest]
+        # platform: [macos-latest, ubuntu-latest, windows-latest]
 
     steps:
       - name: Checkout code
