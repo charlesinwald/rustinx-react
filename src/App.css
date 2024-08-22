@@ -108,3 +108,21 @@ button {
 .main-content {
 	padding: 20rem;
 }
+
+.error-container {
+	text-align: center;
+	padding: 50px;
+	background-color: #3c3836;
+	color: #ebdbb2;
+	border-radius: 8px;
+	margin: 20px;
+  }
+  
+  .error-container h1 {
+	color: #fb4934;
+  }
+  
+  .error-container p {
+	font-size: 1.2em;
+  }
+  

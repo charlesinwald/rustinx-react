@@ -1,11 +1,12 @@
 # Rustinx
 ### A simple and easy to use GUI for Nginx.
 - View Access and Error Events from Nginx in realtime
+- Monitor resource usage and active connections
 - Start, stop or restart nginx from the GUI
 - Real time monitoring of Nginx configuration validity
 - View Nginx state (inactive, active)
 <!-- Screenshot -->
-![Rustinx](https://i.imgur.com/ty9oqBo.png)
+![Rustinx](https://i.imgur.com/KzkdGfc.png)
 ## Linux Installation and Usage Instructions
 This application is available as a `.AppImage` and `.deb` package. You can choose the package that is most suitable for your system.
 ### For `.AppImage` Package

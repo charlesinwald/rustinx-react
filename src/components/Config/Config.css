@@ -68,3 +68,62 @@
     visibility: visible;
     opacity: 1;
   }
+
+  .config-list-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  
+  .arg-input {
+    width: 80%;
+    padding: 5px;
+    margin-right: 10px;
+    background-color: #3c3836;
+    color: #ebdbb2;
+    border: 1px solid #504945;
+    border-radius: 4px;
+  }
+  
+  .tooltip {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+  }
+  
+  .tooltip .tooltip-text {
+    visibility: hidden;
+    width: 200px;
+    background-color: #504945;
+    color: #ebdbb2;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -100px;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  
+  .tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+  }
+  
+  .save-button {
+    margin-top: 20px;
+    padding: 10px 20px;
+    background-color: #83a598;
+    color: #282828;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .save-button:hover {
+    background-color: #fabd2f;
+  }
+  

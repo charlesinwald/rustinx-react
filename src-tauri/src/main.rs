@@ -2,7 +2,8 @@
     all(not(debug_assertions), target_os = "windows"),
     windows_subsystem = "windows"
 )]
-use tauri::{CustomMenuItem, Manager, RunEvent, SystemTray, SystemTrayEvent, SystemTrayMenu};
+
+use tauri::{CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu};
 use tauri_plugin_log::LogTarget;
 
 mod commands;
@@ -16,24 +17,16 @@ async fn main() {
     let devtools = devtools::init();
     tauri::Builder::default()
         .setup(|app| {
-            util::check_sudo(&app.get_window("main").unwrap());
             let app_handle = app.handle();
-            let tray_id = "my-tray";
             tokio::spawn(events_service::start_emitting_events(app_handle.clone()));
             logging::start_log_monitoring(app_handle.clone());
-            SystemTray::new()
-                .with_id(tray_id)
-                .with_menu(
-                    SystemTrayMenu::new()
-                        .add_item(CustomMenuItem::new("quit", "Quit"))
-                        .add_item(CustomMenuItem::new("open", "Open")),
-                )
-                .on_event(move |_event| {
-                    let _tray_handle = app_handle.tray_handle_by_id(tray_id).unwrap();
-                })
-                .build(app)?;
             Ok(())
         })
+        .system_tray(SystemTray::new().with_menu(
+            SystemTrayMenu::new()
+                .add_item(CustomMenuItem::new("quit", "Quit"))
+                .add_item(CustomMenuItem::new("open", "Open")),
+        ))
         .on_system_tray_event(|app, event| match event {
             SystemTrayEvent::MenuItemClick { id, .. } => match id.as_str() {
                 "quit" => {
@@ -49,11 +42,6 @@ async fn main() {
             _ => {}
         })
         .plugin(devtools)
-        // .plugin(
-        //     tauri_plugin_log::Builder::default()
-        //         .targets([LogTarget::LogDir, LogTarget::Stdout, LogTarget::Webview])
-        //         .build(),
-        // )
         .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
             let window = app.get_window("main").unwrap();
             window.set_focus().unwrap();
@@ -66,6 +54,9 @@ async fn main() {
             commands::open_file,
             commands::get_system_metrics,
             config::get_nginx_version,
+            config::modify_nginx_service,
+            config::reload_and_restart_nginx_service,
+            util::check_sudo_status 
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

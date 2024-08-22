@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./Config.css";
 import { invoke } from "@tauri-apps/api/tauri";
-import { NGINX_BUILD_OPTIONS, NginxBuildOption } from "./arguments";
+import { NGINX_BUILD_OPTIONS } from "./arguments";
 
 const Config: React.FC = () => {
   const [nginxConfig, setNginxConfig] = useState<{
@@ -11,11 +11,14 @@ const Config: React.FC = () => {
     tlsSupport: string | undefined;
   } | null>(null);
 
+  const [editArgs, setEditArgs] = useState<string[]>([]);
+
   useEffect(() => {
     invoke<string>("get_nginx_version")
       .then((output) => {
         const parsedConfig = parseNginxConfig(output);
         setNginxConfig(parsedConfig);
+        setEditArgs(parsedConfig.configureArgs);
       })
       .catch((error) => console.error("Error fetching NGINX config:", error));
   }, []);
@@ -43,7 +46,6 @@ const Config: React.FC = () => {
     };
   };
 
-  // Helper function to correctly parse arguments
   const parseConfigureArgs = (argsLine: string): string[] => {
     const args: string[] = [];
     let currentArg = "";
@@ -53,7 +55,7 @@ const Config: React.FC = () => {
       const char = argsLine[i];
 
       if (char === "'") {
-        insideQuotes = !insideQuotes; // Toggle insideQuotes flag
+        insideQuotes = !insideQuotes;
       } else if (char === " " && !insideQuotes) {
         if (currentArg) {
           args.push(currentArg);
@@ -68,7 +70,6 @@ const Config: React.FC = () => {
       args.push(currentArg);
     }
 
-    // If there are nested options like --with-cc-opt='-g -O2 ...', split them further
     return args.flatMap((arg) => {
       if (arg.includes("=") && arg.includes("'")) {
         const [option, nestedArgs] = arg.split("=");
@@ -77,7 +78,7 @@ const Config: React.FC = () => {
           nestedArgs.startsWith("'") &&
           nestedArgs.endsWith("'")
         ) {
-          const cleanedArgs = nestedArgs.slice(1, -1); // Remove surrounding quotes
+          const cleanedArgs = nestedArgs.slice(1, -1);
           return [option, ...cleanedArgs.split(" ")];
         }
       }
@@ -88,13 +89,10 @@ const Config: React.FC = () => {
   const getArgumentDescription = (arg: string): string => {
     for (const [key, value] of Object.entries(NGINX_BUILD_OPTIONS)) {
       if (arg.startsWith(key)) {
-        console.log(arg, value);
         if (typeof value === "string") {
           return value;
         } else if (typeof value === "object") {
-          console.log(arg, value);
           const specificArg = arg.replace(key, "").trim();
-          console.log("specificArg", specificArg);
           return (
             value[specificArg] || `${specificArg}: No description available.`
           );
@@ -104,6 +102,28 @@ const Config: React.FC = () => {
     return "No description available.";
   };
 
+  const handleInputChange = (index: number, newValue: string) => {
+    const newArgs = [...editArgs];
+    newArgs[index] = newValue;
+    setEditArgs(newArgs);
+  };
+
+  const handleSaveChanges = () => {
+    // Join the edited arguments into a single string
+    const updatedArgs = editArgs.join(" ");
+    
+    // Call the Rust function via Tauri's invoke, passing the arguments as a string
+    invoke("modify_nginx_service", { custom_args: updatedArgs })
+      .then(() => {
+        alert("Nginx command-line arguments updated successfully.");
+      })
+      .catch((error) => {
+        console.error("Failed to update Nginx arguments:", error);
+        alert("Failed to update Nginx arguments.");
+      });
+  };
+  
+  
   if (!nginxConfig) {
     return <div>Loading...</div>;
   }
@@ -124,12 +144,18 @@ const Config: React.FC = () => {
         <p>{nginxConfig.tlsSupport}</p>
       </div>
       <div className="config-section">
-        <h3 className="config-subtitle">Arguments</h3>
+        <h3 className="config-subtitle">Edit Arguments</h3>
         <ul className="config-list">
-          {nginxConfig.configureArgs.map((arg, index) => (
+          {editArgs.map((arg, index) => (
             <li key={index} className="config-list-item">
+              <input
+                type="text"
+                value={arg}
+                onChange={(e) => handleInputChange(index, e.target.value)}
+                className="arg-input"
+              />
               <span className="tooltip">
-                {arg}
+                ?
                 <span className="tooltip-text">
                   {getArgumentDescription(arg)}
                 </span>
@@ -137,6 +163,9 @@ const Config: React.FC = () => {
             </li>
           ))}
         </ul>
+        <button onClick={handleSaveChanges} className="save-button">
+          Save Changes
+        </button>
       </div>
     </div>
   );
