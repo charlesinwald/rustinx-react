@@ -6,6 +6,7 @@ import NginxStatus from "./components/Status/Status";
 import Sidebar from "./components/Sidebar/Sidebar";
 import Config from "./components/Config/Config";
 import { invoke } from "@tauri-apps/api/tauri";
+import Systemd from "./components/Systemd/Systemd";
 
 function App() {
   const [currentView, setCurrentView] = useState("logs");
@@ -31,6 +32,7 @@ function App() {
     { label: "Logs", view: "logs" },
     { label: "Control Panel", view: "controlPanel" },
     { label: "Config Info", view: "configInfo" },
+    { label: "Systemd", view: "systemdLogs" },
   ];
 
   if (!isRoot) {
@@ -51,6 +53,7 @@ function App() {
         {currentView === "logs" && <Logs />}
         {currentView === "controlPanel" && <ControlPanel />}
         {currentView === "configInfo" && <Config />}
+        {currentView === "systemdLogs" && <Systemd />}
       </div>
     </div>
   );

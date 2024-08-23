@@ -45,6 +45,8 @@
     cursor: pointer;
     color: #83a598;
     border-bottom: 1px dashed #83a598;
+    font-weight: bold;
+    font-size: 1.5rem;
   }
   
   .tooltip-text {
@@ -85,33 +87,6 @@
     border-radius: 4px;
   }
   
-  .tooltip {
-    position: relative;
-    display: inline-block;
-    cursor: pointer;
-  }
-  
-  .tooltip .tooltip-text {
-    visibility: hidden;
-    width: 200px;
-    background-color: #504945;
-    color: #ebdbb2;
-    text-align: center;
-    border-radius: 6px;
-    padding: 5px;
-    position: absolute;
-    z-index: 1;
-    bottom: 125%;
-    left: 50%;
-    margin-left: -100px;
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
-  
-  .tooltip:hover .tooltip-text {
-    visibility: visible;
-    opacity: 1;
-  }
   
   .save-button {
     margin-top: 20px;

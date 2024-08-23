@@ -11,6 +11,7 @@ mod config;
 mod events_service;
 mod logging;
 mod util;
+mod systemd;
 
 #[tokio::main]
 async fn main() {
@@ -56,7 +57,8 @@ async fn main() {
             config::get_nginx_version,
             config::modify_nginx_service,
             config::reload_and_restart_nginx_service,
-            util::check_sudo_status 
+            util::check_sudo_status,
+            systemd::get_systemd_logs 
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
