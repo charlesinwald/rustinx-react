@@ -47,16 +47,16 @@ jobs:
             pkg-config \
             libappindicator3-dev  # Install the appindicator library
 
-      - name: Install Dependencies (macOS)
-        if: matrix.platform == 'macos-latest'
-        run: |
-          brew install \
-            gtk+3 \
-            webkit2gtk \
-            libappindicator \
-            pkg-config \
-            curl \
-            openssl
+      # - name: Install Dependencies (macOS)
+      #   if: matrix.platform == 'macos-latest'
+      #   run: |
+      #     brew install \
+      #       gtk+3 \
+      #       webkit2gtk \
+      #       libappindicator \
+      #       pkg-config \
+      #       curl \
+      #       openssl
 
       - name: Install dependencies
         run: yarn install # or npm install
