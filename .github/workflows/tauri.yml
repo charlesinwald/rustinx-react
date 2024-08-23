@@ -10,11 +10,11 @@ on:
 
 jobs:
   tauri-build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.platform }}
 
     strategy:
       matrix:
-        platform: [ubuntu-latest]
+        platform: [ubuntu-latest, macos-latest]
 
     steps:
       - name: Checkout code
@@ -32,7 +32,7 @@ jobs:
           override: true
           profile: minimal
 
-      - name: Enable Ubuntu Repositories and Install Dependencies
+      - name: Enable Ubuntu Repositories and Install Dependencies (Ubuntu)
         if: matrix.platform == 'ubuntu-latest'
         run: |
           sudo add-apt-repository universe
@@ -46,6 +46,17 @@ jobs:
             libwebkit2gtk-4.0-dev \
             pkg-config \
             libappindicator3-dev  # Install the appindicator library
+
+      - name: Install Dependencies (macOS)
+        if: matrix.platform == 'macos-latest'
+        run: |
+          brew install \
+            gtk+3 \
+            webkit2gtk \
+            libappindicator \
+            pkg-config \
+            curl \
+            openssl
 
       - name: Install dependencies
         run: yarn install # or npm install
