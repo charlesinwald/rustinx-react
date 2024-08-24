@@ -1,10 +1,10 @@
 .systemd-container {
-  padding: 20px;
+  padding: 6rem;
   background-color: #282828;
   color: #ebdbb2;
   border-radius: 8px;
   max-width: 1200px;
-  margin: 40px auto;
+  margin: 6rem auto;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
   font-family: "Fira Code", monospace;
 }

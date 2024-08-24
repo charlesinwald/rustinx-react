@@ -3,6 +3,7 @@ use sysinfo::System;
 use std::process::Command;
 use std::env::consts::OS;
 
+
 #[tauri::command]
 pub(crate) fn restart_nginx() -> Result<(), String> {
     let output = Command::new("systemctl")
@@ -55,13 +56,17 @@ pub(crate) fn stop_nginx() -> Result<(), String> {
 
 #[tauri::command]
 pub(crate) fn get_nginx_conf_path() -> Result<String, String> {
+    // Run the `nginx -t` command to test the configuration and extract the path to the config file
     let output = Command::new("sh")
         .arg("-c")
-        .arg("nginx -t 2>&1 | grep -oP '(/[^ :]+\\.conf)' | head -n 1")
+        .arg("nginx -t 2>&1 | grep -Eo '(/[^ :]+\\.conf)' | head -n 1")
         .output()
         .map_err(|e| format!("Failed to execute command: {}", e))?;
 
+    // Convert the output to a string and trim any whitespace
     let output_str = String::from_utf8_lossy(&output.stdout).trim().to_string();
+
+    // Check if the output is empty, indicating that no configuration file path was found
     if output_str.is_empty() {
         Err("No configuration file found".into())
     } else {
@@ -93,26 +98,43 @@ pub(crate) fn open_file(file_path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub(crate) fn get_system_metrics() -> Result<(f32, u64, u64, usize), String> {
+pub(crate) fn get_system_metrics() -> Result<(f32, u64, u64, usize, usize), String> {
     let mut sys = System::new_all();
 
     // Refresh system to get updated information
     sys.refresh_all();
 
-    // Calculate total CPU usage
-    let cpu_usage = sys.global_cpu_usage();
+    // Initialize variables to accumulate nginx-specific metrics
+    let mut cpu_usage = 0.0;
+    let mut used_memory = 0;
+    let mut worker_count = 0;
 
-    // Get total and used memory
-    let total_memory = sys.total_memory();
-    let used_memory = sys.used_memory();
-
-    // Get the number of running processes (tasks/workers)
+    // Get the number of nginx processes (tasks/workers) and calculate their CPU and memory usage
     let num_tasks = sys.processes()
         .values()
         .filter(|process| {
             let name = process.name().to_string_lossy().to_ascii_lowercase();
-            name.contains("nginx")
+            if name.contains("nginx") {
+                cpu_usage += process.cpu_usage();
+                used_memory += process.memory();
+
+                // Check if it's a worker process
+                if name.contains("worker process") {
+                    worker_count += 1;
+                }
+
+                true
+            } else {
+                false
+            }
         })
         .count();
-    Ok((cpu_usage, total_memory, used_memory, num_tasks))
+
+    // Get total memory for the system
+    let total_memory = sys.total_memory();
+
+    Ok((cpu_usage, total_memory, used_memory, num_tasks, worker_count))
 }
+
+//     Ok((cpu_usage, total_memory, used_memory, num_tasks))
+// 
