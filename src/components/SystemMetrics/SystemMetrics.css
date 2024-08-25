@@ -30,3 +30,10 @@
     color: #ebdbb2;
   }
   
+.control-group {
+    display: flex;
+    align-items: center;
+}
+.clear-button, .refresh-button {
+  margin-top: 1rem;
+}

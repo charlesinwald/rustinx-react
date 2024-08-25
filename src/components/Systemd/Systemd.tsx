@@ -58,7 +58,7 @@ const Systemd = () => {
   return (
     <div className="systemd-container">
       <div className="systemd-header">
-        <h2>Systemd Logs for {serviceName}</h2>
+        <h2>System Logs for {serviceName}</h2>
         <div className="service-controls">
           <div className="control-group">
             <label htmlFor="service-select">Service:</label>
@@ -84,47 +84,56 @@ const Systemd = () => {
             />
           </div>
 
-          <div className="control-group">
-            <label htmlFor="since">Since:</label>
-            <input
-              id="since"
-              type="datetime-local"
-              value={since}
-              onChange={(e) => setSince(e.target.value)}
-              className="datetime-input"
-            />
-          </div>
+          {process.platform === "linux" ? (
+            <>
+              <div className="control-group">
+                <label htmlFor="since">Since:</label>
+                <input
+                  id="since"
+                  type="datetime-local"
+                  value={since}
+                  onChange={(e) => setSince(e.target.value)}
+                  className="datetime-input"
+                />
+              </div>
 
-          <div className="control-group">
-            <label htmlFor="until">Until:</label>
-            <input
-              id="until"
-              type="datetime-local"
-              value={until}
-              onChange={(e) => setUntil(e.target.value)}
-              className="datetime-input"
-            />
-          </div>
+              <div className="control-group">
+                <label htmlFor="until">Until:</label>
+                <input
+                  id="until"
+                  type="datetime-local"
+                  value={until}
+                  onChange={(e) => setUntil(e.target.value)}
+                  className="datetime-input"
+                />
+              </div>
+            </>
+          ) : (
+            <div></div>
+          )}
           <div className="control-group checkbox-group">
-          <label>
-            <input
-              type="checkbox"
-              checked={noPager}
-              onChange={(e) => setNoPager(e.target.checked)}
-            />
-            <span></span>
-            No Pager
-          </label>
-
-          <label>
-            <input
-              type="checkbox"
-              checked={reverse}
-              onChange={(e) => setReverse(e.target.checked)}
-            />
-            <span></span>
-            Reverse Order
-          </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={noPager}
+                onChange={(e) => setNoPager(e.target.checked)}
+              />
+              <span></span>
+              No Pager
+            </label>
+            {process.platform === "linux" ? (
+              <label>
+                <input
+                  type="checkbox"
+                  checked={reverse}
+                  onChange={(e) => setReverse(e.target.checked)}
+                />
+                <span></span>
+                Reverse Order
+              </label>
+            ) : (
+              <div></div>
+            )}
           </div>
 
           <div className="control-group button-group">
@@ -133,7 +142,10 @@ const Systemd = () => {
               className="refresh-button"
               disabled={loading}
             >
-              {loading ? "..." : "⟳"}
+              {loading ? (
+                "..."
+              ) : ("Refresh")
+                }
             </button>
 
             <button onClick={clearLogs} className="clear-button">

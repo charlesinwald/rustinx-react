@@ -6,16 +6,24 @@ use std::env::consts::OS;
 
 #[tauri::command]
 pub(crate) fn restart_nginx() -> Result<(), String> {
-    let output = Command::new("systemctl")
-        .arg("restart")
-        .arg("nginx")
-        .output()
-        .map_err(|e| e.to_string())?;
+    let output = match OS {
+        "linux" => Command::new("systemctl")
+            .arg("restart")
+            .arg("nginx")
+            .output(),
+        "macos" => Command::new("brew")
+            .arg("services")
+            .arg("restart")
+            .arg("nginx")
+            .output(),
+        _ => return Err("Unsupported OS".into()),
+    }
+    .map_err(|e| e.to_string())?;
+
     if output.status.success() {
-        info!("Nginx restarted");
+        println!("Nginx restarted");
         Ok(())
     } else {
-        warn!("Ngix NOT restarted");
         let stderr = String::from_utf8_lossy(&output.stderr);
         Err(format!("Failed to restart Nginx: {}", stderr))
     }
@@ -23,16 +31,24 @@ pub(crate) fn restart_nginx() -> Result<(), String> {
 
 #[tauri::command]
 pub(crate) fn start_nginx() -> Result<(), String> {
-    let output = Command::new("systemctl")
-        .arg("start")
-        .arg("nginx")
-        .output()
-        .map_err(|e| e.to_string())?;
+    let output = match OS {
+        "linux" => Command::new("systemctl")
+            .arg("start")
+            .arg("nginx")
+            .output(),
+        "macos" => Command::new("brew")
+            .arg("services")
+            .arg("start")
+            .arg("nginx")
+            .output(),
+        _ => return Err("Unsupported OS".into()),
+    }
+    .map_err(|e| e.to_string())?;
+
     if output.status.success() {
-        info!("Nginx started");
+        println!("Nginx started");
         Ok(())
     } else {
-        warn!("Ngix NOT started");
         let stderr = String::from_utf8_lossy(&output.stderr);
         Err(format!("Failed to start Nginx: {}", stderr))
     }
@@ -40,13 +56,22 @@ pub(crate) fn start_nginx() -> Result<(), String> {
 
 #[tauri::command]
 pub(crate) fn stop_nginx() -> Result<(), String> {
-    let output = Command::new("systemctl")
-        .arg("stop")
-        .arg("nginx")
-        .output()
-        .map_err(|e| e.to_string())?;
+    let output = match OS {
+        "linux" => Command::new("systemctl")
+            .arg("stop")
+            .arg("nginx")
+            .output(),
+        "macos" => Command::new("brew")
+            .arg("services")
+            .arg("stop")
+            .arg("nginx")
+            .output(),
+        _ => return Err("Unsupported OS".into()),
+    }
+    .map_err(|e| e.to_string())?;
+
     if output.status.success() {
-        print!("Nginx stopped");
+        println!("Nginx stopped");
         Ok(())
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
@@ -79,20 +104,24 @@ pub(crate) fn open_file(file_path: String) -> Result<(), String> {
     // Determine the OS and set the appropriate command
     let result = match OS {
         "windows" => Command::new("cmd").arg("/C").arg("start").arg(&file_path).output(),
-        "macos" => Command::new("open").arg(&file_path).output(),
+        "macos" => {
+            // Use a specific application to open the file on macOS
+            Command::new("open")
+                .arg("-a")
+                .arg("TextEdit") // You can change this to another editor like "Visual Studio Code"
+                .arg(&file_path)
+                .output()
+        },
         "linux" => Command::new("xdg-open").arg(&file_path).output(),
         _ => return Err("Unsupported OS".into()),
     };
 
-    // Check the result of the command execution
     match result {
-        Ok(output) => {
-            if output.status.success() {
-                Ok(())
-            } else {
-                Err(format!("Failed to open file: {}", String::from_utf8_lossy(&output.stderr)))
-            }
-        }
+        Ok(output) if output.status.success() => Ok(()),
+        Ok(output) => Err(format!(
+            "Failed to open file: {}",
+            String::from_utf8_lossy(&output.stderr)
+        )),
         Err(e) => Err(format!("Failed to execute command: {}", e)),
     }
 }

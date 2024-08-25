@@ -29,10 +29,10 @@ function App() {
   };
 
   const links = [
-    { label: "Logs", view: "logs" },
+    { label: "Access Logs", view: "logs" },
     { label: "Control Panel", view: "controlPanel" },
     { label: "Config Info", view: "configInfo" },
-    { label: "Systemd", view: "systemdLogs" },
+    { label: "System Logs", view: "systemdLogs" },
   ];
 
   if (!isRoot) {
