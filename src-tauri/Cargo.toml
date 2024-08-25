@@ -24,7 +24,6 @@ tauri-plugin-log = { git = "https://github.com/tauri-apps/plugins-workspace", br
 tauri-sys = { git = "https://github.com/JonasKruckenberg/tauri-sys" }
 tauri-plugin-single-instance = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
 sysinfo = "0.31.2"
-devtools = "0.3.3"
 [target.'cfg(unix)'.dependencies]
 nix = "0.28.0"
 [target.'cfg(windows)'.dependencies]

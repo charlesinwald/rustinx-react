@@ -15,7 +15,7 @@ mod systemd;
 
 #[tokio::main]
 async fn main() {
-    let devtools = devtools::init();
+    // let devtools = devtools::init();
     tauri::Builder::default()
         .setup(|app| {
             let app_handle = app.handle();
@@ -42,7 +42,7 @@ async fn main() {
             },
             _ => {}
         })
-        .plugin(devtools)
+        // .plugin(devtools)
         .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
             let window = app.get_window("main").unwrap();
             window.set_focus().unwrap();
