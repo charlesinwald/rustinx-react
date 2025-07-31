@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import "./Config.css";
 import { invoke } from "@tauri-apps/api/tauri";
 import { NGINX_BUILD_OPTIONS } from "./arguments";
 

@@ -44,11 +44,11 @@ function ControlPanel() {
           viewBox="0 0 64 64"
           width="48"
           height="48"
-          fill="#8ec07c"
+          fill="hsl(var(--success))"
           className="control-button-icon"
         >
-          <circle cx="32" cy="32" r="30" fill="#3c3836" />
-          <polygon points="24,16 48,32 24,48" fill="#8ec07c" />
+          <circle cx="32" cy="32" r="30" fill="hsl(var(--app-dark-gray))" />
+          <polygon points="24,16 48,32 24,48" fill="hsl(var(--success))" />
         </svg>
       </button>
       <button className="control-button" onClick={confirmAndRestartNginx}>
@@ -58,19 +58,19 @@ function ControlPanel() {
           viewBox="0 0 64 64"
           width="48"
           height="48"
-          fill="#8ec07c"
+          fill="hsl(var(--success))"
           className="control-button-icon"
         >
-          <circle cx="32" cy="32" r="30" fill="#3c3836" />
+          <circle cx="32" cy="32" r="30" fill="hsl(var(--app-dark-gray))" />
           <path
             d="M28,18 A14,14 0 1,0 46,32"
             fill="none"
-            stroke="#8ec07c"
+            stroke="hsl(var(--success))"
             stroke-width="6"
           />
           <polygon
             points="46,18 46,32 32,32"
-            fill="#8ec07c"
+            fill="hsl(var(--success))"
             transform="translate(-6, -6)"
           />
         </svg>
@@ -82,11 +82,11 @@ function ControlPanel() {
           viewBox="0 0 64 64"
           width="48"
           height="48"
-          fill="#8ec07c"
+          fill="hsl(var(--destructive))"
           className="control-button-icon"
         >
-          <circle cx="32" cy="32" r="30" fill="#3c3836" />
-          <rect x="22" y="22" width="20" height="20" fill="#8ec07c" />
+          <circle cx="32" cy="32" r="30" fill="hsl(var(--app-dark-gray))" />
+          <rect x="22" y="22" width="20" height="20" fill="hsl(var(--destructive))" />
         </svg>
       </button>
       <h2>{restartResponse}</h2>

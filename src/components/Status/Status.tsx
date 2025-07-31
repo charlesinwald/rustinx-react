@@ -1,98 +1,156 @@
-import React, { useState, useEffect } from "react";
-import { listen } from "@tauri-apps/api/event";
-import { invoke } from "@tauri-apps/api/tauri";
-import "./Status.css";
-function NginxStatus() {
-  const [nginxStatus, setNginxStatus] = useState("Checking...");
-  const [configEvent, setConfigEvent] = useState("");
-  const [nginxConfigPath, setNginxConfigPath] = useState("");
+"use client"
+
+import { useState, useEffect } from "react"
+import { listen } from "@tauri-apps/api/event"
+import { invoke } from "@tauri-apps/api/tauri"
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
+import { Button } from "../ui/button"
+import { Badge } from "../ui/badge"
+import { Separator } from "../ui/separator"
+import { CheckCircle, XCircle, Loader2, FileText, ExternalLink, Server } from "lucide-react"
+import { cn } from "../../lib/utils"
+
+export default function NginxStatus() {
+  const [nginxStatus, setNginxStatus] = useState("Checking...")
+  const [configEvent, setConfigEvent] = useState("")
+  const [nginxConfigPath, setNginxConfigPath] = useState("")
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     const unlistenNginxStatus = listen("nginx_status_check", (event) => {
-      console.log("Nginx Status:", event.payload);
-      setNginxStatus(event.payload);
-    });
+      console.log("Nginx Status:", event.payload)
+      setNginxStatus(event.payload as string)
+      setIsLoading(false)
+    })
 
     const unlistenConfigCheck = listen("nginx_config_check", (event) => {
-      console.log("Nginx Config Check:", event.payload);
-      setConfigEvent(event.payload as string);
-    });
+      console.log("Nginx Config Check:", event.payload)
+      setConfigEvent(event.payload as string)
+    })
 
     return () => {
-      unlistenNginxStatus.then((unlistenFn) => unlistenFn());
-      unlistenConfigCheck.then((unlistenFn) => unlistenFn());
-    };
-  }, []);
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case "active":
-        return (
-          <svg
-            className="status-icon"
-            width="25"
-            height="25"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <circle cx="12" cy="12" r="12" fill="#8ec07c" />
-          </svg>
-        );
-      case "inactive":
-        return (
-          <svg
-            className="status-icon"
-            width="25"
-            height="25"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <circle cx="12" cy="12" r="12" fill="#cc241d" />
-          </svg>
-        );
-      default:
-        return <span></span>;
+      unlistenNginxStatus.then((unlistenFn) => unlistenFn())
+      unlistenConfigCheck.then((unlistenFn) => unlistenFn())
     }
-  };
+  }, [])
 
-  const capitalizeFirstLetter = (string) => {
-    return string.charAt(0).toUpperCase() + string.slice(1);
-  };
+  const getStatusConfig = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "active":
+        return {
+          icon: CheckCircle,
+          color: "text-green-600",
+          bgColor: "bg-green-50 border-green-200",
+          variant: "default" as const,
+          label: "Active",
+        }
+      case "inactive":
+        return {
+          icon: XCircle,
+          color: "text-red-600",
+          bgColor: "bg-red-50 border-red-200",
+          variant: "destructive" as const,
+          label: "Inactive",
+        }
+      default:
+        return {
+          icon: Loader2,
+          color: "text-yellow-600",
+          bgColor: "bg-yellow-50 border-yellow-200",
+          variant: "secondary" as const,
+          label: "Checking...",
+        }
+    }
+  }
+
+  const capitalizeFirstLetter = (string: string) => {
+    return string.charAt(0).toUpperCase() + string.slice(1)
+  }
 
   async function fetchNginxConfPath() {
     try {
-      const confPath = await invoke<string>("get_nginx_conf_path");
-      console.log(`NGINX configuration file path: ${confPath}`);
-      setNginxConfigPath(confPath);
+      const confPath = await invoke<string>("get_nginx_conf_path")
+      console.log(`NGINX configuration file path: ${confPath}`)
+      setNginxConfigPath(confPath)
     } catch (error) {
-      console.error("Error fetching NGINX configuration path:", error);
+      console.error("Error fetching NGINX configuration path:", error)
     }
   }
 
   async function openFile(filePath: string) {
     try {
-      await invoke("open_file", { filePath });
-      console.log(`Opened file: ${filePath}`);
+      await invoke("open_file", { filePath })
+      console.log(`Opened file: ${filePath}`)
     } catch (error) {
-      console.error("Failed to open file:", error);
+      console.error("Failed to open file:", error)
     }
   }
 
-  fetchNginxConfPath();
+  // Fetch nginx config path on component mount
+  useEffect(() => {
+    fetchNginxConfPath()
+  }, [])
+
+  const statusConfig = getStatusConfig(nginxStatus)
+  const StatusIcon = statusConfig.icon
 
   return (
-    <div className="status-container">
-      <div className="online-status">
-        <p className="status-text">
-          Status: <b>{capitalizeFirstLetter(nginxStatus)}</b>
-        </p>
-        <div>{getStatusIcon(nginxStatus)}</div>
-      </div>
-      <h2>{configEvent}</h2>
-      <p className="open-file-link" onClick={() => openFile(nginxConfigPath)}>
-        Open Config {nginxConfigPath}
-      </p>
-      <div></div>
-    </div>
-  );
-}
+    <Card className="w-full">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-sm font-medium">
+          <Server className="h-4 w-4" />
+          Nginx Status
+        </CardTitle>
+      </CardHeader>
 
-export default NginxStatus;
+      <CardContent className="space-y-4">
+        {/* Status Display */}
+        <div className={cn("flex items-center justify-between rounded-lg border p-3", statusConfig.bgColor)}>
+          <div className="flex items-center gap-2">
+            <StatusIcon
+              className={cn("h-4 w-4", statusConfig.color, nginxStatus === "Checking..." && "animate-spin")}
+            />
+            <span className="text-sm font-medium">{capitalizeFirstLetter(nginxStatus)}</span>
+          </div>
+          <Badge variant={statusConfig.variant} className="text-xs">
+            {statusConfig.label}
+          </Badge>
+        </div>
+
+        {/* Config Event */}
+        {configEvent && (
+          <>
+            <Separator />
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-muted-foreground">Configuration Event</h4>
+              <p className="text-sm bg-muted p-2 rounded text-muted-foreground">{configEvent}</p>
+            </div>
+          </>
+        )}
+
+        {/* Config File */}
+        {nginxConfigPath && (
+          <>
+            <Separator />
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-muted-foreground">Configuration File</h4>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full justify-start gap-2 h-auto p-2 bg-transparent"
+                onClick={() => openFile(nginxConfigPath)}
+              >
+                <FileText className="h-4 w-4" />
+                <div className="flex-1 text-left">
+                  <div className="text-xs font-medium">Open Config</div>
+                  <div className="text-xs text-muted-foreground truncate">{nginxConfigPath}</div>
+                </div>
+                <ExternalLink className="h-3 w-3" />
+              </Button>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  )
+}

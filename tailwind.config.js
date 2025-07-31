@@ -51,6 +51,50 @@ module.exports = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+        },
+        successHover: {
+          DEFAULT: "hsl(var(--success-hover))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
+        },
+        appBackground: {
+          DEFAULT: "hsl(var(--app-background))",
+        },
+        appLink: {
+          DEFAULT: "hsl(var(--app-link))",
+        },
+        appDarkGray: {
+          DEFAULT: "hsl(var(--app-dark-gray))",
+        },
+        appGreenHover: {
+          DEFAULT: "hsl(var(--app-green-hover))",
+        },
+        appLightText: {
+          DEFAULT: "hsl(var(--app-light-text))",
+        },
+        appButtonBackground: {
+          DEFAULT: "hsl(var(--app-button-background))",
+        },
+        appButtonHover: {
+          DEFAULT: "hsl(var(--app-button-hover))",
+        },
+        appButtonActive: {
+          DEFAULT: "hsl(var(--app-button-active))",
+        },
+        appYellowHover: {
+          DEFAULT: "hsl(var(--app-yellow-hover))",
+        },
+        appRedHover: {
+          DEFAULT: "hsl(var(--app-red-hover))",
+        },
+        appMediumGray: {
+          DEFAULT: "hsl(var(--app-medium-gray))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

@@ -10,7 +10,7 @@ import {
   Legend,
 } from "chart.js";
 import { invoke } from "@tauri-apps/api/tauri";
-import "./SystemMetricsGraph.css";
+
 import zoomPlugin from "chartjs-plugin-zoom";
 
 Chart.register(
@@ -73,31 +73,23 @@ const SystemMetricsGraph: React.FC = () => {
     labels: labels,
     datasets: [
       {
-        label: "CPU Usage (%)",
-        data: cpuData,
-        borderColor: "rgba(75,192,192,1)",
-        backgroundColor: "rgba(75,192,192,0.2)",
+        borderColor: "hsl(var(--graph-color-1))",
+        backgroundColor: "hsla(var(--graph-color-1), 0.2)",
         fill: true,
       },
       {
-        label: "RAM Usage (%)",
-        data: ramData,
-        borderColor: "rgba(255,99,132,1)",
-        backgroundColor: "rgba(255,99,132,0.2)",
+        borderColor: "hsl(var(--graph-color-2))",
+        backgroundColor: "hsla(var(--graph-color-2), 0.2)",
         fill: true,
       },
       {
-        label: "TX Bandwidth (MB)",
-        data: txData,
-        borderColor: "rgba(54,162,235,1)",
-        backgroundColor: "rgba(54,162,235,0.2)",
+        borderColor: "hsl(var(--graph-color-3))",
+        backgroundColor: "hsla(var(--graph-color-3), 0.2)",
         fill: true,
       },
       {
-        label: "RX Bandwidth (MB)",
-        data: rxData,
-        borderColor: "rgba(75,192,192,1)",
-        backgroundColor: "rgba(75,192,192,0.2)",
+        borderColor: "hsl(var(--graph-color-1))",
+        backgroundColor: "hsla(var(--graph-color-1), 0.2)",
         fill: true,
       },
     ],

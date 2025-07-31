@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import "./App.css";
 import Logs from "./components/Logs/Logs";
 import ControlPanel from "./components/ControlPanel";
 import NginxStatus from "./components/Status/Status";
@@ -37,19 +36,19 @@ function App() {
 
   if (!isRoot) {
     return (
-      <div className="App">
-        <div className="error-container">
-          <h1>Error: Insufficient Privileges</h1>
-          <p>This application needs to be run as root. Please restart with sudo.</p>
+      <div className="flex h-screen flex-col items-center justify-center bg-background text-foreground">
+        <div className="text-center p-12 bg-card text-card-foreground rounded-lg shadow-lg">
+          <h1 className="text-3xl font-bold text-destructive mb-4">Error: Insufficient Privileges</h1>
+          <p className="text-lg">This application needs to be run as root. Please restart with sudo.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="App">
+    <div className="flex h-screen">
       <Sidebar links={links} onLinkClick={handleLinkClick} currentView={currentView} />
-      <div className="main-content" style={{ marginLeft: "250px", padding: "20px" }}>
+      <div className="flex-1 overflow-y-auto p-6">
         {currentView === "logs" && <Logs />}
         {currentView === "controlPanel" && <ControlPanel />}
         {currentView === "configInfo" && <Config />}

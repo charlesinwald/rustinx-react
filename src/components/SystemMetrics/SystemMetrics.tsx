@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import "./SystemMetrics.css";
 import { invoke } from "@tauri-apps/api/tauri";
 import SystemMetricsGraph from "./SystemMetricsGraph";
 

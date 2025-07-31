@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
-import "./Systemd.css";
 
 const Systemd = () => {
   const [logs, setLogs] = useState([]);
