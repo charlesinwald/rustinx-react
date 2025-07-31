@@ -137,7 +137,7 @@ export default function NginxStatus() {
               <h4 className="text-sm font-medium text-muted-foreground">
                 Configuration Event
               </h4>
-              <p className="text-sm bg-muted p-2 rounded text-muted-foreground">
+              <p className="text-sm bg-muted p-2 rounded">
                 {configEvent}
               </p>
             </div>

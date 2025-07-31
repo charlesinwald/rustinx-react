@@ -3,14 +3,7 @@ import { listen } from "@tauri-apps/api/event";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { ScrollArea } from "../ui/scroll-area";
 import { Separator } from "../ui/separator";
-import {
-  Copy,
-  Search,
-  Eye,
-  EyeOff,
-  Activity,
-  AlertTriangle,
-} from "lucide-react";
+import { Copy, Search, Eye, EyeOff, Activity, AlertTriangle } from "lucide-react";
 import { useToast } from "../../hooks/use-toast";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";

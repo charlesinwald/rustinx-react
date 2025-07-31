@@ -8,10 +8,13 @@ import {
   Title,
   CategoryScale,
   Legend,
+  Tooltip,
 } from "chart.js";
 import { invoke } from "@tauri-apps/api/tauri";
-
 import zoomPlugin from "chartjs-plugin-zoom";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Label } from "../ui/label";
+import { Switch } from "../ui/switch";
 
 Chart.register(
   LineElement,
@@ -20,17 +23,18 @@ Chart.register(
   Title,
   CategoryScale,
   Legend,
+  Tooltip,
   zoomPlugin
 );
 
 const SystemMetricsGraph: React.FC = () => {
   const [cpuData, setCpuData] = useState<number[]>([]);
   const [ramData, setRamData] = useState<number[]>([]);
-  const [txData, setTxData] = useState<number[]>([]); // Transmitted bandwidth data
-  const [rxData, setRxData] = useState<number[]>([]); // Received bandwidth data
+  const [txData, setTxData] = useState<number[]>([]);
+  const [rxData, setRxData] = useState<number[]>([]);
   const [labels, setLabels] = useState<string[]>([]);
-  const [intervalTime, setIntervalTime] = useState<number>(5000); // Default to 5 seconds
-  const [isRelative, setIsRelative] = useState<boolean>(false); // Toggle for relative or absolute values
+  const [intervalTime, setIntervalTime] = useState<number>(5000);
+  const [isRelative, setIsRelative] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchMetrics = () => {
@@ -62,10 +66,7 @@ const SystemMetricsGraph: React.FC = () => {
         );
     };
 
-    // Fetch metrics based on the selected interval time
     const interval = setInterval(fetchMetrics, intervalTime);
-
-    // Cleanup interval on component unmount or when intervalTime or isRelative changes
     return () => clearInterval(interval);
   }, [intervalTime, isRelative]);
 
@@ -73,40 +74,70 @@ const SystemMetricsGraph: React.FC = () => {
     labels: labels,
     datasets: [
       {
+        label: "CPU Usage",
+        data: cpuData,
         borderColor: "hsl(var(--graph-color-1))",
         backgroundColor: "hsla(var(--graph-color-1), 0.2)",
         fill: true,
+        tension: 0.1,
       },
       {
+        label: "RAM Usage",
+        data: ramData,
         borderColor: "hsl(var(--graph-color-2))",
         backgroundColor: "hsla(var(--graph-color-2), 0.2)",
         fill: true,
+        tension: 0.1,
       },
       {
+        label: "TX Bandwidth (MB)",
+        data: txData,
         borderColor: "hsl(var(--graph-color-3))",
         backgroundColor: "hsla(var(--graph-color-3), 0.2)",
         fill: true,
+        tension: 0.1,
       },
       {
-        borderColor: "hsl(var(--graph-color-1))",
-        backgroundColor: "hsla(var(--graph-color-1), 0.2)",
+        label: "RX Bandwidth (MB)",
+        data: rxData,
+        borderColor: "hsl(var(--graph-color-4))", // Assuming a fourth color variable
+        backgroundColor: "hsla(var(--graph-color-4), 0.2)",
         fill: true,
+        tension: 0.1,
       },
     ],
   };
 
   const options = {
     responsive: true,
+    maintainAspectRatio: false,
     scales: {
       y: {
         beginAtZero: true,
-        max: 100,
+        max: isRelative ? 100 : undefined,
+        title: {
+          display: true,
+          text: isRelative ? "Percentage (%)" : "Value",
+        },
+      },
+      x: {
+        title: {
+          display: true,
+          text: "Time",
+        },
       },
     },
     plugins: {
       legend: {
         display: true,
         position: "top",
+        labels: {
+          color: "hsl(var(--foreground))",
+        },
+      },
+      tooltip: {
+        mode: "index" as const,
+        intersect: false,
       },
       zoom: {
         zoom: {
@@ -116,45 +147,48 @@ const SystemMetricsGraph: React.FC = () => {
           pinch: {
             enabled: true,
           },
-          mode: "y",
+          mode: "xy" as const,
+        },
+        pan: {
+          enabled: true,
+          mode: "xy" as const,
         },
       },
     },
   };
 
-  const handleGranularityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setIntervalTime(parseInt(e.target.value, 10));
-  };
-
-  const handleModeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setIsRelative(e.target.checked);
-  };
-
   return (
-    <div className="graph-container">
-      <div className="controls">
-        <label htmlFor="granularity">Update Interval: </label>
-        <select
-          id="granularity"
-          onChange={handleGranularityChange}
-          value={intervalTime}
-        >
-          <option value={1000}>1 Second</option>
-          <option value={2000}>2 Seconds</option>
-          <option value={5000}>5 Seconds</option>
-          <option value={10000}>10 Seconds</option>
-        </select>
-        <label htmlFor="relativeMode">
-          <input
-            type="checkbox"
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row gap-4 items-center">
+        <div className="flex items-center gap-2">
+          <Label htmlFor="granularity">Update Interval:</Label>
+          <Select
+            value={intervalTime.toString()}
+            onValueChange={(value) => setIntervalTime(parseInt(value, 10))}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select interval" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1000">1 Second</SelectItem>
+              <SelectItem value="2000">2 Seconds</SelectItem>
+              <SelectItem value="5000">5 Seconds</SelectItem>
+              <SelectItem value="10000">10 Seconds</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center gap-2">
+          <Switch
             id="relativeMode"
             checked={isRelative}
-            onChange={handleModeChange}
+            onCheckedChange={setIsRelative}
           />
-          Relative Mode
-        </label>
+          <Label htmlFor="relativeMode">Relative Mode</Label>
+        </div>
       </div>
-      <Line data={data} options={options} />
+      <div className="h-[400px]">
+        <Line data={data} options={options} />
+      </div>
     </div>
   );
 };
