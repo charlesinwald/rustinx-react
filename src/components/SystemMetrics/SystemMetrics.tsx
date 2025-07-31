@@ -41,63 +41,6 @@ const SystemMetrics: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Activity className="h-5 w-5" />
-            NGINX System Metrics
-          </CardTitle>
-          <CardDescription>
-            Real-time performance overview of your system.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="flex items-center space-x-2">
-            <Cpu className="h-5 w-5 text-muted-foreground" />
-            <div>
-              <p className="text-sm font-medium">CPU Usage</p>
-              <Badge variant="outline">{cpuUsage.toFixed(2)}%</Badge>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Microchip className="h-5 w-5 text-muted-foreground" />
-            <div>
-              <p className="text-sm font-medium">Memory Usage</p>
-              <Badge variant="outline">
-                {((usedMemory / totalMemory) * 100).toFixed(2)}% (
-                {(usedMemory / (1024 * 1024 * 1024)).toFixed(2)} GB /{" "}
-                {(totalMemory / (1024 * 1024 * 1024)).toFixed(2)} GB)
-              </Badge>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <HardDrive className="h-5 w-5 text-muted-foreground" />
-            <div>
-              <p className="text-sm font-medium">Active Tasks/Workers</p>
-              <Badge variant="outline">{tasks}</Badge>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Upload className="h-5 w-5 text-muted-foreground" />
-            <div>
-              <p className="text-sm font-medium">Transmitted Bandwidth</p>
-              <Badge variant="outline">
-                {(txBytes / (1024 * 1024)).toFixed(2)} MB
-              </Badge>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Download className="h-5 w-5 text-muted-foreground" />
-            <div>
-              <p className="text-sm font-medium">Received Bandwidth</p>
-              <Badge variant="outline">
-                {(rxBytes / (1024 * 1024)).toFixed(2)} MB
-              </Badge>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5" />
             System Metrics Graph
           </CardTitle>
           <CardDescription>
