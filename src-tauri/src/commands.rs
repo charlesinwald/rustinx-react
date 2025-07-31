@@ -1,4 +1,4 @@
-use log::{info, warn};
+
 use sysinfo::System;
 use std::process::Command;
 use std::env::consts::OS;

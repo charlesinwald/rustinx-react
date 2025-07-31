@@ -3,9 +3,9 @@
     windows_subsystem = "windows"
 )]
 
-use actix_web::{web, App, HttpServer};
+use actix_web::{App, HttpServer};
 use tauri::{CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu};
-use tauri_plugin_log::LogTarget;
+
 
 mod actix_routes;
 mod commands;
@@ -17,6 +17,8 @@ mod util;
 
 #[tokio::main]
 async fn main() {
+    std::env::set_var("GDK_BACKEND", "x11");
+    std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
     // Start the Actix Web server in a separate async task
     let actix_server = tokio::spawn(async {
         HttpServer::new(|| App::new().configure(actix_routes::configure))
