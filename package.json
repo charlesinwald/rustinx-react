@@ -39,6 +39,8 @@
 		"@radix-ui/react-separator": "^1.1.7",
 		"@radix-ui/react-slot": "^1.2.3",
 		"@radix-ui/react-switch": "^1.2.5",
+		"@radix-ui/react-tabs": "^1.1.12",
+		"@radix-ui/react-tooltip": "^1.2.7",
 		"@tauri-apps/api": "^1.5.3",
 		"@tauri-apps/plugin-log": "git+https://github.com/tauri-apps/tauri-plugin-log.git#v2",
 		"@types/react": "^18.0.21",
