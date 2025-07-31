@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { listen } from "@tauri-apps/api/event";
 import "./Logs.css";
+import { Button } from "../ui/button";
 
 function Logs() {
   const [accessEvent, setAccessEvent] = useState("");

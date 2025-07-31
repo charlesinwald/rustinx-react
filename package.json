@@ -23,19 +23,31 @@
 	"license": "ISC",
 	"devDependencies": {
 		"@tauri-apps/cli": "^1.1.1",
+		"autoprefixer": "^10.4.21",
 		"parcel": "^2.7.0",
-		"process": "^0.11.10"
+		"postcss": "^8.5.6",
+		"process": "^0.11.10",
+		"shadcn-ui": "^0.9.5",
+		"tailwindcss": "^3",
+		"tailwindcss-animate": "^1.0.7"
 	},
 	"dependencies": {
+		"@radix-ui/react-slot": "^1.2.3",
 		"@tauri-apps/api": "^1.5.3",
 		"@tauri-apps/plugin-log": "https://github.com/tauri-apps/tauri-plugin-log#v2",
 		"@types/react": "^18.0.21",
 		"@types/react-dom": "^18.0.6",
 		"chart.js": "^4.4.3",
 		"chartjs-plugin-zoom": "^2.0.1",
+		"class-variance-authority": "^0.7.1",
+		"clsx": "^2.1.1",
 		"react": "^18.2.0",
 		"react-chartjs-2": "^5.2.0",
-		"react-dom": "^18.2.0"
+		"react-dom": "^18.2.0",
+		"tailwind-merge": "^3.3.1"
+	},
+	"alias": {
+		"@/*": "./src/*"
 	},
 	"packageManager": "yarn@3.6.4+sha512.e70835d4d6d62c07be76b3c1529cb640c7443f0fe434ef4b6478a5a399218cbaf1511b396b3c56eb03bc86424cff2320f6167ad2fde273aa0df6e60b7754029f"
 }
