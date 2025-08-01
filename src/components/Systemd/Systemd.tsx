@@ -1,5 +1,5 @@
 import type React from "react"
-import { useState, useEffect, useMemo, useCallback } from "react"
+import { useState, useEffect, useMemo, useCallback, memo } from "react"
 import { invoke } from "@tauri-apps/api/tauri"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card"
 import { Input } from "../ui/input"
@@ -70,10 +70,10 @@ const LINE_OPTIONS = [
   { value: "1000", label: "1000 lines" },
 ]
 
-const Systemd: React.FC = () => {
+const Systemd: React.FC = memo(() => {
   const [logs, setLogs] = useState<string[]>([])
   const [serviceName, setServiceName] = useState("nginx.service")
-  const [numLines, setNumLines] = useState(100)
+  const [numLines, setNumLines] = useState(50) // Reduced from 100 to 50 for better performance
   const [noPager, setNoPager] = useState(true)
   const [since, setSince] = useState("")
   const [until, setUntil] = useState("")
@@ -82,7 +82,7 @@ const Systemd: React.FC = () => {
   const [error, setError] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
   const [autoRefresh, setAutoRefresh] = useState(false)
-  const [refreshInterval, setRefreshInterval] = useState(5000)
+  const [refreshInterval, setRefreshInterval] = useState(15000) // Increased from 5000 to 15000 for better performance
   const { toast } = useToast()
 
   const parseLogEntry = useCallback(
@@ -180,10 +180,23 @@ const Systemd: React.FC = () => {
     })
   }
 
+  // Debounced search to improve performance
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("")
+  
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+    }, 300) // 300ms debounce
+
+    return () => {
+      clearTimeout(handler)
+    }
+  }, [searchTerm])
+
   const filteredLogs = useMemo(() => {
-    if (!searchTerm) return logs
-    return logs.filter((log) => log.toLowerCase().includes(searchTerm.toLowerCase()))
-  }, [logs, searchTerm])
+    if (!debouncedSearchTerm) return logs
+    return logs.filter((log) => log.toLowerCase().includes(debouncedSearchTerm.toLowerCase()))
+  }, [logs, debouncedSearchTerm])
 
   const parsedLogs = useMemo(() => {
     return filteredLogs.map(parseLogEntry)
@@ -428,8 +441,8 @@ const Systemd: React.FC = () => {
                   Logs for {serviceName}
                 </CardTitle>
                 <CardDescription>
-                  {filteredLogs.length} of {logs.length} entries
-                  {searchTerm && ` matching "${searchTerm}"`}
+                  {filteredLogs.length > 100 ? `100 of ${filteredLogs.length}` : filteredLogs.length} of {logs.length} entries
+                  {debouncedSearchTerm && ` matching "${debouncedSearchTerm}"`}
                 </CardDescription>
               </div>
               {filteredLogs.length > 0 && (
@@ -449,11 +462,11 @@ const Systemd: React.FC = () => {
             {filteredLogs.length > 0 ? (
               <ScrollArea className="h-[500px] w-full rounded-md border">
                 <div className="p-4 space-y-2">
-                  {parsedLogs.map((log, index) => {
+                  {parsedLogs.slice(0, 100).map((log, index) => {
                     const config = LOG_LEVELS[log.level as keyof typeof LOG_LEVELS]
                     return (
                       <div
-                        key={index}
+                        key={`${log.service}-${index}`}
                         className={cn(
                           "rounded-lg border p-3 font-mono text-sm transition-colors hover:bg-muted/50",
                           config.bg,
@@ -491,6 +504,12 @@ const Systemd: React.FC = () => {
                       </div>
                     )
                   })}
+                  {parsedLogs.length > 100 && (
+                    <div className="text-center py-4 text-muted-foreground">
+                      <p>Showing first 100 of {parsedLogs.length} entries</p>
+                      <p className="text-xs">Use search to filter results</p>
+                    </div>
+                  )}
                 </div>
               </ScrollArea>
             ) : (
@@ -500,11 +519,11 @@ const Systemd: React.FC = () => {
                   <p className="text-muted-foreground">
                     {searchTerm ? "No logs found matching your search" : "No logs available"}
                   </p>
-                  {searchTerm && (
-                    <Button variant="outline" size="sm" onClick={() => setSearchTerm("")}>
-                      Clear search
-                    </Button>
-                  )}
+                                        {debouncedSearchTerm && (
+                        <Button variant="outline" size="sm" onClick={() => setSearchTerm("")}>
+                          Clear search
+                        </Button>
+                      )}
                 </div>
               </div>
             )}
@@ -513,6 +532,8 @@ const Systemd: React.FC = () => {
       </div>
     </TooltipProvider>
   )
-}
+});
+
+Systemd.displayName = 'Systemd';
 
 export default Systemd
