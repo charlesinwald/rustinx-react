@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { ScrollArea } from "../ui/scroll-area";
@@ -6,27 +6,37 @@ import { Separator } from "../ui/separator";
 import { Copy, Search, Eye, EyeOff, Activity, AlertTriangle } from "lucide-react";
 import { useToast } from "../../hooks/use-toast";
 import { Button } from "../ui/button";
-import { Badge } from "../ui/badge";
+
 import { Input } from "../ui/input";
 
 interface LogEvent {
   payload: string;
 }
 
+const MAX_LOG_LINES = 1000; // Maximum number of log lines to keep in memory
+
 function Logs() {
-  const [accessEvent, setAccessEvent] = useState("");
-  const [errorEvent, setErrorEvent] = useState("");
+  const [accessLogs, setAccessLogs] = useState<string[]>([]);
+  const [errorLogs, setErrorLogs] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [rawMode, setRawMode] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     const handleAccessEvent = (event: LogEvent) => {
-      setAccessEvent((prevEvent) => prevEvent + "\n" + event.payload);
+      setAccessLogs((prevLogs) => {
+        const newLogs = [...prevLogs, event.payload];
+        // Keep only the last MAX_LOG_LINES entries
+        return newLogs.slice(-MAX_LOG_LINES);
+      });
     };
 
     const handleErrorEvent = (event: LogEvent) => {
-      setErrorEvent((prevEvent) => prevEvent + "\n" + event.payload);
+      setErrorLogs((prevLogs) => {
+        const newLogs = [...prevLogs, event.payload];
+        // Keep only the last MAX_LOG_LINES entries
+        return newLogs.slice(-MAX_LOG_LINES);
+      });
     };
 
     const unlistenAccess = listen("access_event", handleAccessEvent);
@@ -42,15 +52,21 @@ function Logs() {
     setSearchQuery(e.target.value);
   };
 
-  const filterLogs = (logs: string) => {
-    if (!searchQuery) return logs;
-    return logs
-      .split("\n")
-      .filter((log: string) =>
-        log.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-      .join("\n");
+  const handleToggleRawMode = () => {
+    setRawMode(!rawMode);
   };
+
+  const filterLogs = useMemo(() => {
+    return (logs: string[]) => {
+      if (!searchQuery) return logs;
+      return logs.filter((log: string) =>
+        log.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    };
+  }, [searchQuery]);
+
+  const filteredAccessLogs = useMemo(() => filterLogs(accessLogs), [accessLogs, filterLogs]);
+  const filteredErrorLogs = useMemo(() => filterLogs(errorLogs), [errorLogs, filterLogs]);
 
   const copyToClipboard = async (text: string) => {
     try {
@@ -78,149 +94,108 @@ function Logs() {
   };
 
   const formatLog = (log: string, index: number) => {
-    const logParts = log.match(
-      /(\S+) - - \[(.+?)\] "(\S+) (.+?) (.+?)" (\d+) (\d+) "(.*?)" "(.*?)"/
-    );
-
-    if (!logParts)
+    if (rawMode) {
       return (
         <div
           key={index}
-          className="p-3 bg-muted/50 rounded-lg text-sm font-mono"
+          className="mb-2 p-3 bg-card rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors"
+          onClick={() => copyToClipboard(log)}
         >
-          {log}
+          <pre className="text-sm font-mono whitespace-pre-wrap break-all">{log}</pre>
         </div>
       );
+    }
 
-    const [
-      _,
-      ipAddress,
-      timestamp,
-      method,
-      path,
-      protocol,
-      statusCode,
-      responseSize,
-      referrer,
-      userAgent,
-    ] = logParts;
+    // Parse log entry (simplified example - adjust based on your log format)
+    const parts = log.split(" ");
+    const ip = parts[0] || "Unknown";
+    const timestamp = parts[3]?.replace("[", "") || "Unknown time";
+    const method = parts[5]?.replace('"', "") || "GET";
+    const path = parts[6] || "/";
+    const statusCode = parts[8] || "200";
+    const size = parts[9] || "0";
 
     return (
-      <Card key={index} className="mb-3">
-        <CardContent className="p-4">
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Badge variant={getStatusCodeVariant(statusCode)}>
-                {statusCode}
-              </Badge>
-              <Badge variant="outline" className="font-mono text-xs">
-                {method}
-              </Badge>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => copyToClipboard(log)}
-              className="h-8 w-8 p-0"
+      <div
+        key={index}
+        className="mb-2 p-3 bg-card rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors"
+        onClick={() => copyToClipboard(log)}
+      >
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono bg-muted px-2 py-1 rounded">
+              {method}
+            </span>
+            <span
+              className={`text-xs px-2 py-1 rounded ${
+                getStatusCodeVariant(statusCode) === "destructive"
+                  ? "bg-destructive text-destructive-foreground"
+                  : getStatusCodeVariant(statusCode) === "secondary"
+                  ? "bg-secondary text-secondary-foreground"
+                  : "bg-primary text-primary-foreground"
+              }`}
             >
-              <Copy className="h-4 w-4" />
-            </Button>
+              {statusCode}
+            </span>
           </div>
-
-          <div className="grid gap-2 text-sm">
-            <div className="flex items-center gap-2">
-              <span className="font-medium text-muted-foreground min-w-[100px]">
-                IP Address:
-              </span>
-              <span className="font-mono">{ipAddress}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="font-medium text-muted-foreground min-w-[100px]">
-                Timestamp:
-              </span>
-              <span className="font-mono text-xs">{timestamp}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="font-medium text-muted-foreground min-w-[100px]">
-                Request:
-              </span>
-              <span className="font-mono">{path}</span>
-              <Badge variant="outline" className="text-xs">
-                {protocol}
-              </Badge>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="font-medium text-muted-foreground min-w-[100px]">
-                Size:
-              </span>
-              <span className="font-mono">{responseSize} bytes</span>
-            </div>
-            {referrer !== "-" && (
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-muted-foreground min-w-[100px]">
-                  Referrer:
-                </span>
-                <span className="font-mono text-xs truncate">{referrer}</span>
-              </div>
-            )}
-            <div className="flex items-start gap-2">
-              <span className="font-medium text-muted-foreground min-w-[100px]">
-                User-Agent:
-              </span>
-              <span className="font-mono text-xs break-all">{userAgent}</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          <span className="text-xs text-muted-foreground">{timestamp}</span>
+        </div>
+        <div className="text-sm">
+          <span className="font-medium">{path}</span>
+        </div>
+        <div className="flex justify-between items-center mt-2 text-xs text-muted-foreground">
+          <span>{ip}</span>
+          <span>{size} bytes</span>
+        </div>
+      </div>
     );
   };
 
-  const handleToggleRawMode = () => {
-    setRawMode(!rawMode);
+  const clearLogs = () => {
+    setAccessLogs([]);
+    setErrorLogs([]);
+    toast({
+      title: "Logs cleared",
+      description: "All logs have been cleared.",
+    });
   };
 
-  const renderLogs = (logs: string, type: string) => {
-    if (logs === "") {
-      return (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="rounded-full bg-muted p-3 mb-4">
-            {type === "access" ? (
-              <Activity className="h-6 w-6 text-muted-foreground" />
-            ) : (
-              <AlertTriangle className="h-6 w-6 text-muted-foreground" />
-            )}
-          </div>
-          <p className="text-muted-foreground">
-            Waiting for {type} events from Nginx...
-          </p>
-        </div>
-      );
-    }
-
-    const filteredLogs = filterLogs(logs);
-    const logEntries = filteredLogs
-      .split("\n")
-      .filter((log: string) => log.trim());
-
-    if (rawMode) {
-      return (
-        <div className="space-y-2">
-          {logEntries.map((log: string, index: number) => (
-            <div
-              key={index}
-              className="p-3 bg-muted/50 rounded-lg text-sm font-mono break-all"
-            >
-              {log}
-            </div>
-          ))}
-        </div>
-      );
-    }
-
+  const renderLogs = (logs: string[], title: string, icon: React.ReactNode) => {
     return (
-      <div className="space-y-3">
-        {logEntries.map((log: string, index: number) => formatLog(log, index))}
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            {icon}
+            {title}
+            <span className="text-sm font-normal text-muted-foreground">
+              ({logs.length} entries)
+            </span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ScrollArea className="h-[500px] w-full">
+            <div className="space-y-2">
+              {logs.length === 0 ? (
+                <div className="flex items-center justify-center h-32 text-center">
+                  <div className="space-y-2">
+                    <Activity className="h-8 w-8 text-muted-foreground mx-auto" />
+                    <p className="text-muted-foreground">
+                      {searchQuery ? "No logs found matching your search" : "No logs available"}
+                    </p>
+                    {searchQuery && (
+                      <Button variant="outline" size="sm" onClick={() => setSearchQuery("")}>
+                        Clear search
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                logs.map((log, index) => formatLog(log, index))
+              )}
+            </div>
+          </ScrollArea>
+        </CardContent>
+      </Card>
     );
   };
 
@@ -259,6 +234,15 @@ function Logs() {
             )}
             {rawMode ? "Formatted" : "Raw"} Mode
           </Button>
+
+          <Button
+            variant="outline"
+            onClick={clearLogs}
+            className="flex items-center gap-2"
+          >
+            <AlertTriangle className="h-4 w-4" />
+            Clear All
+          </Button>
         </div>
       </div>
 
@@ -267,34 +251,18 @@ function Logs() {
       {/* Logs Grid */}
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Access Events */}
-        <Card className="flex flex-col">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5 text-green-500" />
-              Access Events
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1 p-0">
-            <ScrollArea className="h-[600px] px-6 pb-6 bg-background">
-              {renderLogs(accessEvent, "access")}
-            </ScrollArea>
-          </CardContent>
-        </Card>
+        {renderLogs(
+          filteredAccessLogs,
+          "Access Logs",
+          <Activity className="h-5 w-5 text-blue-500" />
+        )}
 
         {/* Error Events */}
-        <Card className="flex flex-col">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-red-500" />
-              Error Events
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1 p-0">
-            <ScrollArea className="h-[600px] px-6 pb-6 bg-background">
-              {renderLogs(errorEvent, "error")}
-            </ScrollArea>
-          </CardContent>
-        </Card>
+        {renderLogs(
+          filteredErrorLogs,
+          "Error Logs",
+          <AlertTriangle className="h-5 w-5 text-red-500" />
+        )}
       </div>
     </div>
   );

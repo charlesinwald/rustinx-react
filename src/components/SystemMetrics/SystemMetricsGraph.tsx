@@ -1,5 +1,5 @@
 import type React from "react"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { Line } from "react-chartjs-2"
 import { Chart, LineElement, PointElement, LinearScale, Title, CategoryScale, Legend, Tooltip, Filler } from "chart.js"
 import { invoke } from "@tauri-apps/api/tauri"
@@ -52,7 +52,7 @@ const SystemMetricsGraph: React.FC = () => {
     rx: [],
     labels: [],
   })
-  const [intervalTime, setIntervalTime] = useState<number>(5000)
+  const [intervalTime, setIntervalTime] = useState<number>(10000) // Changed default to 10 seconds
   const [isRelative, setIsRelative] = useState<boolean>(false)
   const [isPaused, setIsPaused] = useState<boolean>(false)
   const [isLoading, setIsLoading] = useState<boolean>(true)
@@ -78,30 +78,32 @@ const SystemMetricsGraph: React.FC = () => {
       const txMB = txBytes / (1024 * 1024)
       const rxMB = rxBytes / (1024 * 1024)
 
-      let newCpuValue = cpu
-      let newRamValue = ramPercentage
-      let newTxValue = txMB
-      let newRxValue = rxMB
+      setMetricData((prevData) => {
+        let newCpuValue = cpu
+        let newRamValue = ramPercentage
+        let newTxValue = txMB
+        let newRxValue = rxMB
 
-      if (isRelative && metricData.cpu.length > 0) {
-        const maxCpu = Math.max(...metricData.cpu, cpu)
-        const maxRam = Math.max(...metricData.ram, ramPercentage)
-        const maxTx = Math.max(...metricData.tx, txMB)
-        const maxRx = Math.max(...metricData.rx, rxMB)
+        if (isRelative && prevData.cpu.length > 0) {
+          const maxCpu = Math.max(...prevData.cpu, cpu)
+          const maxRam = Math.max(...prevData.ram, ramPercentage)
+          const maxTx = Math.max(...prevData.tx, txMB)
+          const maxRx = Math.max(...prevData.rx, rxMB)
 
-        newCpuValue = maxCpu > 0 ? (cpu / maxCpu) * 100 : 0
-        newRamValue = maxRam > 0 ? (ramPercentage / maxRam) * 100 : 0
-        newTxValue = maxTx > 0 ? (txMB / maxTx) * 100 : 0
-        newRxValue = maxRx > 0 ? (rxMB / maxRx) * 100 : 0
-      }
+          newCpuValue = maxCpu > 0 ? (cpu / maxCpu) * 100 : 0
+          newRamValue = maxRam > 0 ? (ramPercentage / maxRam) * 100 : 0
+          newTxValue = maxTx > 0 ? (txMB / maxTx) * 100 : 0
+          newRxValue = maxRx > 0 ? (rxMB / maxRx) * 100 : 0
+        }
 
-      setMetricData((prevData) => ({
-        cpu: [...prevData.cpu.slice(-(MAX_DATA_POINTS - 1)), newCpuValue],
-        ram: [...prevData.ram.slice(-(MAX_DATA_POINTS - 1)), newRamValue],
-        tx: [...prevData.tx.slice(-(MAX_DATA_POINTS - 1)), newTxValue],
-        rx: [...prevData.rx.slice(-(MAX_DATA_POINTS - 1)), newRxValue],
-        labels: [...prevData.labels.slice(-(MAX_DATA_POINTS - 1)), timestamp],
-      }))
+        return {
+          cpu: [...prevData.cpu.slice(-(MAX_DATA_POINTS - 1)), newCpuValue],
+          ram: [...prevData.ram.slice(-(MAX_DATA_POINTS - 1)), newRamValue],
+          tx: [...prevData.tx.slice(-(MAX_DATA_POINTS - 1)), newTxValue],
+          rx: [...prevData.rx.slice(-(MAX_DATA_POINTS - 1)), newRxValue],
+          labels: [...prevData.labels.slice(-(MAX_DATA_POINTS - 1)), timestamp],
+        }
+      })
 
       setLastUpdate(currentTime)
       setIsLoading(false)
@@ -114,12 +116,13 @@ const SystemMetricsGraph: React.FC = () => {
       })
       setIsLoading(false)
     }
-  }, [isPaused, isRelative, metricData.cpu, metricData.ram, metricData.tx, metricData.rx, toast])
+  }, [isPaused, isRelative, toast])
 
   useEffect(() => {
+    if (isPaused) return
     const interval = setInterval(fetchMetrics, intervalTime)
     return () => clearInterval(interval)
-  }, [fetchMetrics, intervalTime])
+  }, [fetchMetrics, intervalTime, isPaused])
 
   // Initial fetch
   useEffect(() => {
@@ -169,7 +172,8 @@ const SystemMetricsGraph: React.FC = () => {
     })
   }
 
-  const chartData = {
+  // Memoize chart data to prevent unnecessary re-renders
+  const chartData = useMemo(() => ({
     labels: metricData.labels,
     datasets: [
       {
@@ -217,9 +221,10 @@ const SystemMetricsGraph: React.FC = () => {
         borderWidth: 2,
       },
     ],
-  }
+  }), [metricData])
 
-  const chartOptions = {
+  // Memoize chart options to prevent recreation on every render
+  const chartOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
     interaction: {
@@ -240,7 +245,7 @@ const SystemMetricsGraph: React.FC = () => {
         },
         ticks: {
           color: "#ebdbb2",
-          callback: (value: any) => {
+          callback: function(value: any) {
             if (isRelative) return `${value}%`
             return value
           },
@@ -280,7 +285,7 @@ const SystemMetricsGraph: React.FC = () => {
         borderColor: "#3c3836",
         borderWidth: 1,
         callbacks: {
-          label: (context: any) => {
+          label: function(context: any) {
             let label = context.dataset.label || ""
             if (label) {
               label += ": "
@@ -315,10 +320,10 @@ const SystemMetricsGraph: React.FC = () => {
       },
     },
     animation: {
-      duration: 750,
-      easing: "easeInOutQuart" as const,
+      duration: 200, // Reduced from 750ms to 200ms
+      easing: "easeOutQuart" as const,
     },
-  }
+  }), [isRelative])
 
   const formatBytes = (bytes: number) => {
     const gb = bytes / (1024 * 1024 * 1024)
