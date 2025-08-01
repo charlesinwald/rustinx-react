@@ -1,5 +1,5 @@
 import type React from "react";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { Line } from "react-chartjs-2";
 import {
   Chart,
@@ -87,7 +87,7 @@ const INTERVAL_OPTIONS = [
 
 const MAX_DATA_POINTS = 50;
 
-const SystemMetricsGraph: React.FC = () => {
+const SystemMetricsGraph: React.FC = memo(() => {
   const [metricData, setMetricData] = useState<MetricData>({
     cpu: [],
     ram: [],
@@ -598,6 +598,8 @@ const SystemMetricsGraph: React.FC = () => {
       </Card>
     </div>
   );
-};
+});
+
+SystemMetricsGraph.displayName = "SystemMetricsGraph";
 
 export default SystemMetricsGraph;

@@ -1,17 +1,34 @@
-import type React from "react"
-import { useState, useEffect, useMemo, useCallback } from "react"
-import { invoke } from "@tauri-apps/api/tauri"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card"
-import { Input } from "../ui/input"
-import { Button } from "../ui/button"
-import { Badge } from "../ui/badge"
-import { Separator } from "../ui/separator"
-import { ScrollArea } from "../ui/scroll-area"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
-import { Label } from "../ui/label"
-import { Switch } from "../ui/switch"
-import { useToast } from "../../hooks/use-toast"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip"
+import type React from "react";
+import { useState, useEffect, useMemo, useCallback, memo } from "react";
+import { invoke } from "@tauri-apps/api/tauri";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../ui/card";
+import { Input } from "../ui/input";
+import { Button } from "../ui/button";
+import { Badge } from "../ui/badge";
+import { Separator } from "../ui/separator";
+import { ScrollArea } from "../ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
+import { Label } from "../ui/label";
+import { Switch } from "../ui/switch";
+import { useToast } from "../../hooks/use-toast";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../ui/tooltip";
 import {
   AlertCircle,
   RefreshCw,
@@ -25,33 +42,53 @@ import {
   FileText,
   Settings,
   Copy,
-} from "lucide-react"
-import { cn } from "../../lib/utils"
+} from "lucide-react";
+import { cn } from "../../lib/utils";
 
 interface SystemdOptions {
-  service_name: string
-  no_pager: boolean
-  num_lines: number
-  since: string | null
-  until: string | null
-  reverse: boolean
+  service_name: string;
+  no_pager: boolean;
+  num_lines: number;
+  since: string | null;
+  until: string | null;
+  reverse: boolean;
 }
 
 interface LogEntry {
-  timestamp: string
-  level: string
-  service: string
-  message: string
-  raw: string
+  timestamp: string;
+  level: string;
+  service: string;
+  message: string;
+  raw: string;
 }
 
 const LOG_LEVELS = {
-  ERROR: { color: "text-red-600", bg: "bg-background border-red-200", icon: "🔴" },
-  WARN: { color: "text-yellow-600", bg: "bg-background border-yellow-200", icon: "🟡" },
-  INFO: { color: "text-blue-600", bg: "bg-background border-blue-200", icon: "🔵" },
-  DEBUG: { color: "text-gray-600", bg: "bg-background border-gray-200", icon: "⚪" },
-  DEFAULT: { color: "text-foreground", bg: "bg-background border-border", icon: "⚫" },
-}
+  ERROR: {
+    color: "text-red-600",
+    bg: "bg-background border-red-200",
+    icon: "🔴",
+  },
+  WARN: {
+    color: "text-yellow-600",
+    bg: "bg-background border-yellow-200",
+    icon: "🟡",
+  },
+  INFO: {
+    color: "text-blue-600",
+    bg: "bg-background border-blue-200",
+    icon: "🔵",
+  },
+  DEBUG: {
+    color: "text-gray-600",
+    bg: "bg-background border-gray-200",
+    icon: "⚪",
+  },
+  DEFAULT: {
+    color: "text-foreground",
+    bg: "bg-background border-border",
+    icon: "⚫",
+  },
+};
 
 const SERVICES = [
   { value: "nginx.service", label: "Nginx", icon: "🌐" },
@@ -60,7 +97,7 @@ const SERVICES = [
   { value: "postgresql.service", label: "PostgreSQL", icon: "🐘" },
   { value: "redis.service", label: "Redis", icon: "📦" },
   { value: "docker.service", label: "Docker", icon: "🐳" },
-]
+];
 
 const LINE_OPTIONS = [
   { value: "50", label: "50 lines" },
@@ -68,34 +105,36 @@ const LINE_OPTIONS = [
   { value: "200", label: "200 lines" },
   { value: "500", label: "500 lines" },
   { value: "1000", label: "1000 lines" },
-]
+];
 
-const Systemd: React.FC = () => {
-  const [logs, setLogs] = useState<string[]>([])
-  const [serviceName, setServiceName] = useState("nginx.service")
-  const [numLines, setNumLines] = useState(100)
-  const [noPager, setNoPager] = useState(true)
-  const [since, setSince] = useState("")
-  const [until, setUntil] = useState("")
-  const [reverse, setReverse] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
-  const [searchTerm, setSearchTerm] = useState("")
-  const [autoRefresh, setAutoRefresh] = useState(false)
-  const [refreshInterval, setRefreshInterval] = useState(5000)
-  const { toast } = useToast()
+const Systemd: React.FC = memo(() => {
+  const [logs, setLogs] = useState<string[]>([]);
+  const [serviceName, setServiceName] = useState("nginx.service");
+  const [numLines, setNumLines] = useState(50); // Reduced from 100 to 50 for better performance
+  const [noPager, setNoPager] = useState(true);
+  const [since, setSince] = useState("");
+  const [until, setUntil] = useState("");
+  const [reverse, setReverse] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [refreshInterval, setRefreshInterval] = useState(15000); // Increased from 5000 to 15000 for better performance
+  const { toast } = useToast();
 
   const parseLogEntry = useCallback(
     (logLine: string): LogEntry => {
       // Simple log parsing - you can enhance this based on your log format
-      const timestampMatch = logLine.match(/^(\w{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2})/)
-      const timestamp = timestampMatch ? timestampMatch[1] : ""
+      const timestampMatch = logLine.match(
+        /^(\w{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2})/
+      );
+      const timestamp = timestampMatch ? timestampMatch[1] : "";
 
-      let level = "DEFAULT"
-      if (logLine.toLowerCase().includes("error")) level = "ERROR"
-      else if (logLine.toLowerCase().includes("warn")) level = "WARN"
-      else if (logLine.toLowerCase().includes("info")) level = "INFO"
-      else if (logLine.toLowerCase().includes("debug")) level = "DEBUG"
+      let level = "DEFAULT";
+      if (logLine.toLowerCase().includes("error")) level = "ERROR";
+      else if (logLine.toLowerCase().includes("warn")) level = "WARN";
+      else if (logLine.toLowerCase().includes("info")) level = "INFO";
+      else if (logLine.toLowerCase().includes("debug")) level = "DEBUG";
 
       return {
         timestamp,
@@ -103,14 +142,14 @@ const Systemd: React.FC = () => {
         service: serviceName,
         message: logLine.replace(timestampMatch?.[0] || "", "").trim(),
         raw: logLine,
-      }
+      };
     },
-    [serviceName],
-  )
+    [serviceName]
+  );
 
   const fetchLogs = useCallback(async () => {
-    setLoading(true)
-    setError("")
+    setLoading(true);
+    setError("");
 
     try {
       const output = await invoke<string>("get_systemd_logs", {
@@ -122,99 +161,120 @@ const Systemd: React.FC = () => {
           until: until || null,
           reverse: reverse,
         } as SystemdOptions,
-      })
+      });
 
-      const parsedLogs = output.split("\n").filter((line) => line.trim() !== "")
-      setLogs(parsedLogs)
+      const parsedLogs = output
+        .split("\n")
+        .filter((line) => line.trim() !== "");
+      setLogs(parsedLogs);
 
       if (parsedLogs.length === 0) {
         toast({
           title: "No logs found",
           description: "No logs available for the specified criteria",
-        })
+        });
       }
     } catch (err) {
-      console.error("Failed to fetch systemd logs:", err)
-      const errorMessage = typeof err === "string" ? err : "Error fetching logs."
-      setError(errorMessage)
-      setLogs([])
+      console.error("Failed to fetch systemd logs:", err);
+      const errorMessage =
+        typeof err === "string" ? err : "Error fetching logs.";
+      setError(errorMessage);
+      setLogs([]);
       toast({
         title: "Error",
         description: errorMessage,
         variant: "destructive",
-      })
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [serviceName, numLines, noPager, since, until, reverse, toast])
+  }, [serviceName, numLines, noPager, since, until, reverse, toast]);
 
   const clearLogs = () => {
-    setLogs([])
+    setLogs([]);
     toast({
       title: "Logs cleared",
       description: "Log display has been cleared",
-    })
-  }
+    });
+  };
 
   const exportLogs = () => {
-    const logContent = logs.join("\n")
-    const blob = new Blob([logContent], { type: "text/plain" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `${serviceName}-logs-${new Date().toISOString().split("T")[0]}.txt`
-    a.click()
-    URL.revokeObjectURL(url)
+    const logContent = logs.join("\n");
+    const blob = new Blob([logContent], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${serviceName}-logs-${
+      new Date().toISOString().split("T")[0]
+    }.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
 
     toast({
       title: "Export complete",
       description: "Logs exported successfully",
-    })
-  }
+    });
+  };
 
   const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
+    navigator.clipboard.writeText(text);
     toast({
       title: "Copied",
       description: "Log entry copied to clipboard",
-    })
-  }
+    });
+  };
+
+  // Debounced search to improve performance
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300); // 300ms debounce
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchTerm]);
 
   const filteredLogs = useMemo(() => {
-    if (!searchTerm) return logs
-    return logs.filter((log) => log.toLowerCase().includes(searchTerm.toLowerCase()))
-  }, [logs, searchTerm])
+    if (!debouncedSearchTerm) return logs;
+    return logs.filter((log) =>
+      log.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+    );
+  }, [logs, debouncedSearchTerm]);
 
   const parsedLogs = useMemo(() => {
-    return filteredLogs.map(parseLogEntry)
-  }, [filteredLogs, parseLogEntry])
+    return filteredLogs.map(parseLogEntry);
+  }, [filteredLogs, parseLogEntry]);
 
   const logStats = useMemo(() => {
-    const stats = { ERROR: 0, WARN: 0, INFO: 0, DEBUG: 0, DEFAULT: 0 }
+    const stats = { ERROR: 0, WARN: 0, INFO: 0, DEBUG: 0, DEFAULT: 0 };
     parsedLogs.forEach((log) => {
-      stats[log.level as keyof typeof stats]++
-    })
-    return stats
-  }, [parsedLogs])
+      stats[log.level as keyof typeof stats]++;
+    });
+    return stats;
+  }, [parsedLogs]);
 
   // Auto-refresh functionality
   useEffect(() => {
-    if (!autoRefresh) return
+    if (!autoRefresh) return;
 
-    const interval = setInterval(fetchLogs, refreshInterval)
-    return () => clearInterval(interval)
-  }, [autoRefresh, refreshInterval, fetchLogs])
+    const interval = setInterval(fetchLogs, refreshInterval);
+    return () => clearInterval(interval);
+  }, [autoRefresh, refreshInterval, fetchLogs]);
 
   // Initial fetch and dependency changes
   useEffect(() => {
-    fetchLogs()
-  }, [serviceName, numLines, noPager, since, until, reverse])
+    fetchLogs();
+  }, [serviceName, numLines, noPager, since, until, reverse]);
 
   const formatDateTime = (datetime: string) => {
-    return datetime ? datetime.replace("T", " ") : ""
-  }
+    return datetime ? datetime.replace("T", " ") : "";
+  };
 
-  const isLinux = typeof process !== "undefined" && process.platform === "linux"
+  const isLinux =
+    typeof process !== "undefined" && process.platform === "linux";
 
   return (
     <TooltipProvider>
@@ -226,7 +286,9 @@ const Systemd: React.FC = () => {
               <Terminal className="h-8 w-8" />
               System Logs
             </h1>
-            <p className="text-muted-foreground">Monitor and analyze systemd service logs</p>
+            <p className="text-muted-foreground">
+              Monitor and analyze systemd service logs
+            </p>
           </div>
           <div className="flex items-center gap-2">
             {autoRefresh && (
@@ -246,7 +308,9 @@ const Systemd: React.FC = () => {
               <Settings className="h-5 w-5" />
               Log Configuration
             </CardTitle>
-            <CardDescription>Configure log retrieval parameters and filters</CardDescription>
+            <CardDescription>
+              Configure log retrieval parameters and filters
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Service and Lines */}
@@ -272,7 +336,12 @@ const Systemd: React.FC = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="lines">Number of Lines</Label>
-                <Select value={numLines.toString()} onValueChange={(value) => setNumLines(Number.parseInt(value, 10))}>
+                <Select
+                  value={numLines.toString()}
+                  onValueChange={(value) =>
+                    setNumLines(Number.parseInt(value, 10))
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -294,7 +363,11 @@ const Systemd: React.FC = () => {
                   min="1000"
                   step="1000"
                   value={refreshInterval}
-                  onChange={(e) => setRefreshInterval(Number.parseInt(e.target.value, 10) || 5000)}
+                  onChange={(e) =>
+                    setRefreshInterval(
+                      Number.parseInt(e.target.value, 10) || 5000
+                    )
+                  }
                   disabled={!autoRefresh}
                 />
               </div>
@@ -322,14 +395,24 @@ const Systemd: React.FC = () => {
                     <Calendar className="h-4 w-4" />
                     Since
                   </Label>
-                  <Input id="since" type="datetime-local" value={since} onChange={(e) => setSince(e.target.value)} />
+                  <Input
+                    id="since"
+                    type="datetime-local"
+                    value={since}
+                    onChange={(e) => setSince(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="until" className="flex items-center gap-2">
                     <Clock className="h-4 w-4" />
                     Until
                   </Label>
-                  <Input id="until" type="datetime-local" value={until} onChange={(e) => setUntil(e.target.value)} />
+                  <Input
+                    id="until"
+                    type="datetime-local"
+                    value={until}
+                    onChange={(e) => setUntil(e.target.value)}
+                  />
                 </div>
               </div>
             )}
@@ -340,25 +423,41 @@ const Systemd: React.FC = () => {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex flex-wrap items-center gap-6">
                 <div className="flex items-center space-x-2">
-                  <Switch id="no-pager" checked={noPager} onCheckedChange={setNoPager} />
+                  <Switch
+                    id="no-pager"
+                    checked={noPager}
+                    onCheckedChange={setNoPager}
+                  />
                   <Label htmlFor="no-pager">No Pager</Label>
                 </div>
 
                 {isLinux && (
                   <div className="flex items-center space-x-2">
-                    <Switch id="reverse" checked={reverse} onCheckedChange={setReverse} />
+                    <Switch
+                      id="reverse"
+                      checked={reverse}
+                      onCheckedChange={setReverse}
+                    />
                     <Label htmlFor="reverse">Reverse Order</Label>
                   </div>
                 )}
 
                 <div className="flex items-center space-x-2">
-                  <Switch id="auto-refresh" checked={autoRefresh} onCheckedChange={setAutoRefresh} />
+                  <Switch
+                    id="auto-refresh"
+                    checked={autoRefresh}
+                    onCheckedChange={setAutoRefresh}
+                  />
                   <Label htmlFor="auto-refresh">Auto Refresh</Label>
                 </div>
               </div>
 
               <div className="flex items-center gap-2">
-                <Button variant="outline" onClick={clearLogs} className="gap-2 bg-transparent">
+                <Button
+                  variant="outline"
+                  onClick={clearLogs}
+                  className="gap-2 bg-transparent"
+                >
                   <Trash2 className="h-4 w-4" />
                   Clear
                 </Button>
@@ -371,8 +470,16 @@ const Systemd: React.FC = () => {
                   <Download className="h-4 w-4" />
                   Export
                 </Button>
-                <Button onClick={fetchLogs} disabled={loading} className="gap-2">
-                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                <Button
+                  onClick={fetchLogs}
+                  disabled={loading}
+                  className="gap-2"
+                >
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" />
+                  )}
                   {loading ? "Loading..." : "Refresh"}
                 </Button>
               </div>
@@ -389,16 +496,18 @@ const Systemd: React.FC = () => {
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 {Object.entries(logStats).map(([level, count]) => {
-                  const config = LOG_LEVELS[level as keyof typeof LOG_LEVELS]
+                  const config = LOG_LEVELS[level as keyof typeof LOG_LEVELS];
                   return (
                     <div key={level} className="text-center space-y-1">
                       <div className="flex items-center justify-center gap-1">
                         <span>{config.icon}</span>
                         <span className="text-sm font-medium">{level}</span>
                       </div>
-                      <p className={cn("text-2xl font-bold", config.color)}>{count}</p>
+                      <p className={cn("text-2xl font-bold", config.color)}>
+                        {count}
+                      </p>
                     </div>
-                  )
+                  );
                 })}
               </div>
             </CardContent>
@@ -428,8 +537,11 @@ const Systemd: React.FC = () => {
                   Logs for {serviceName}
                 </CardTitle>
                 <CardDescription>
-                  {filteredLogs.length} of {logs.length} entries
-                  {searchTerm && ` matching "${searchTerm}"`}
+                  {filteredLogs.length > 100
+                    ? `100 of ${filteredLogs.length}`
+                    : filteredLogs.length}{" "}
+                  of {logs.length} entries
+                  {debouncedSearchTerm && ` matching "${debouncedSearchTerm}"`}
                 </CardDescription>
               </div>
               {filteredLogs.length > 0 && (
@@ -449,14 +561,15 @@ const Systemd: React.FC = () => {
             {filteredLogs.length > 0 ? (
               <ScrollArea className="h-[500px] w-full rounded-md border">
                 <div className="p-4 space-y-2">
-                  {parsedLogs.map((log, index) => {
-                    const config = LOG_LEVELS[log.level as keyof typeof LOG_LEVELS]
+                  {parsedLogs.slice(0, 100).map((log, index) => {
+                    const config =
+                      LOG_LEVELS[log.level as keyof typeof LOG_LEVELS];
                     return (
                       <div
-                        key={index}
+                        key={`${log.service}-${index}`}
                         className={cn(
                           "rounded-lg border p-3 font-mono text-sm transition-colors hover:bg-muted/50",
-                          config.bg,
+                          config.bg
                         )}
                       >
                         <div className="flex items-start justify-between gap-2">
@@ -468,11 +581,16 @@ const Systemd: React.FC = () => {
                                   {log.timestamp}
                                 </Badge>
                               )}
-                              <Badge variant="secondary" className={cn("text-xs", config.color)}>
+                              <Badge
+                                variant="secondary"
+                                className={cn("text-xs", config.color)}
+                              >
                                 {log.level}
                               </Badge>
                             </div>
-                            <p className="text-sm leading-relaxed break-all">{log.message || log.raw}</p>
+                            <p className="text-sm leading-relaxed break-all">
+                              {log.message || log.raw}
+                            </p>
                           </div>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -489,8 +607,14 @@ const Systemd: React.FC = () => {
                           </Tooltip>
                         </div>
                       </div>
-                    )
+                    );
                   })}
+                  {parsedLogs.length > 100 && (
+                    <div className="text-center py-4 text-muted-foreground">
+                      <p>Showing first 100 of {parsedLogs.length} entries</p>
+                      <p className="text-xs">Use search to filter results</p>
+                    </div>
+                  )}
                 </div>
               </ScrollArea>
             ) : (
@@ -498,10 +622,16 @@ const Systemd: React.FC = () => {
                 <div className="space-y-2">
                   <FileText className="h-8 w-8 text-muted-foreground mx-auto" />
                   <p className="text-muted-foreground">
-                    {searchTerm ? "No logs found matching your search" : "No logs available"}
+                    {searchTerm
+                      ? "No logs found matching your search"
+                      : "No logs available"}
                   </p>
-                  {searchTerm && (
-                    <Button variant="outline" size="sm" onClick={() => setSearchTerm("")}>
+                  {debouncedSearchTerm && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSearchTerm("")}
+                    >
                       Clear search
                     </Button>
                   )}
@@ -512,7 +642,9 @@ const Systemd: React.FC = () => {
         </Card>
       </div>
     </TooltipProvider>
-  )
-}
+  );
+});
 
-export default Systemd
+Systemd.displayName = "Systemd";
+
+export default Systemd;
