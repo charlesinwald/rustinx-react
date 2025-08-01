@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, memo } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { ScrollArea } from "../ui/scroll-area";
@@ -22,7 +22,7 @@ interface LogEvent {
 
 const MAX_LOG_LINES = 1000; // Maximum number of log lines to keep in memory
 
-function Logs() {
+const Logs = memo(() => {
   const [accessLogs, setAccessLogs] = useState<string[]>([]);
   const [errorLogs, setErrorLogs] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -287,6 +287,8 @@ function Logs() {
       </div>
     </div>
   );
-}
+});
+
+Logs.displayName = 'Logs';
 
 export default Logs;

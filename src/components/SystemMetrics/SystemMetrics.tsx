@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, memo } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Badge } from "../ui/badge";
@@ -6,7 +6,7 @@ import { Separator } from "../ui/separator";
 import { Cpu, Microchip, HardDrive, Upload, Download, Activity } from "lucide-react";
 import SystemMetricsGraph from "./SystemMetricsGraph";
 
-const SystemMetrics: React.FC = () => {
+const SystemMetrics: React.FC = memo(() => {
   const [cpuUsage, setCpuUsage] = useState<number>(0);
   const [totalMemory, setTotalMemory] = useState<number>(0);
   const [usedMemory, setUsedMemory] = useState<number>(0);
@@ -31,7 +31,11 @@ const SystemMetrics: React.FC = () => {
       }
     };
 
-    const interval = setInterval(fetchMetrics, 1000);
+    // Initial fetch
+    fetchMetrics();
+    
+    // Reduced from 1000ms to 5000ms for better performance
+    const interval = setInterval(fetchMetrics, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -53,6 +57,8 @@ const SystemMetrics: React.FC = () => {
       </Card>
     </div>
   );
-};
+});
+
+SystemMetrics.displayName = 'SystemMetrics';
 
 export default SystemMetrics;
