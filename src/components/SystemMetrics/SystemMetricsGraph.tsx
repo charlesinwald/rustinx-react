@@ -1,37 +1,80 @@
-import type React from "react"
-import { useState, useEffect, useCallback, useMemo } from "react"
-import { Line } from "react-chartjs-2"
-import { Chart, LineElement, PointElement, LinearScale, Title, CategoryScale, Legend, Tooltip, Filler } from "chart.js"
-import { invoke } from "@tauri-apps/api/tauri"
-import zoomPlugin from "chartjs-plugin-zoom"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
-import { Label } from "../ui/label"
-import { Switch } from "../ui/switch"
-import { Button } from "../ui/button"
-import { Badge } from "../ui/badge"
-import { Separator } from "../ui/separator"
-import { useToast } from "../../hooks/use-toast"
-import { TrendingUp, Pause, Play, RotateCcw, Download, Activity, Cpu, MemoryStick, Wifi, Clock } from "lucide-react"
-import { cn } from "../../lib/utils"
+import type React from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { Line } from "react-chartjs-2";
+import {
+  Chart,
+  LineElement,
+  PointElement,
+  LinearScale,
+  Title,
+  CategoryScale,
+  Legend,
+  Tooltip,
+  Filler,
+} from "chart.js";
+import { invoke } from "@tauri-apps/api/tauri";
+import zoomPlugin from "chartjs-plugin-zoom";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
+import { Label } from "../ui/label";
+import { Switch } from "../ui/switch";
+import { Button } from "../ui/button";
+import { Badge } from "../ui/badge";
+import { Separator } from "../ui/separator";
+import { useToast } from "../../hooks/use-toast";
+import {
+  TrendingUp,
+  Pause,
+  Play,
+  RotateCcw,
+  Download,
+  Activity,
+  Cpu,
+  MemoryStick,
+  Wifi,
+  Clock,
+} from "lucide-react";
+import { cn } from "../../lib/utils";
 
-Chart.register(LineElement, PointElement, LinearScale, Title, CategoryScale, Legend, Tooltip, Filler, zoomPlugin)
+Chart.register(
+  LineElement,
+  PointElement,
+  LinearScale,
+  Title,
+  CategoryScale,
+  Legend,
+  Tooltip,
+  Filler,
+  zoomPlugin
+);
 
 interface MetricData {
-  cpu: number[]
-  ram: number[]
-  tx: number[]
-  rx: number[]
-  labels: string[]
+  cpu: number[];
+  ram: number[];
+  tx: number[];
+  rx: number[];
+  labels: string[];
 }
 
 interface SystemMetric {
-  cpu: number
-  totalMemory: number
-  usedMemory: number
-  tasks: number
-  txBytes: number
-  rxBytes: number
+  cpu: number;
+  totalMemory: number;
+  usedMemory: number;
+  tasks: number;
+  txBytes: number;
+  rxBytes: number;
 }
 
 const INTERVAL_OPTIONS = [
@@ -40,9 +83,9 @@ const INTERVAL_OPTIONS = [
   { value: "5000", label: "5 Seconds", icon: "⭐" },
   { value: "10000", label: "10 Seconds", icon: "🕐" },
   { value: "30000", label: "30 Seconds", icon: "⏰" },
-]
+];
 
-const MAX_DATA_POINTS = 50
+const MAX_DATA_POINTS = 50;
 
 const SystemMetricsGraph: React.FC = () => {
   const [metricData, setMetricData] = useState<MetricData>({
@@ -51,49 +94,60 @@ const SystemMetricsGraph: React.FC = () => {
     tx: [],
     rx: [],
     labels: [],
-  })
-  const [intervalTime, setIntervalTime] = useState<number>(10000) // Changed default to 10 seconds
-  const [isRelative, setIsRelative] = useState<boolean>(false)
-  const [isPaused, setIsPaused] = useState<boolean>(false)
-  const [isLoading, setIsLoading] = useState<boolean>(true)
-  const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
-  const [currentMetrics, setCurrentMetrics] = useState<SystemMetric | null>(null)
-  const { toast } = useToast()
+  });
+  const [intervalTime, setIntervalTime] = useState<number>(10000); // Changed default to 10 seconds
+  const [isRelative, setIsRelative] = useState<boolean>(false);
+  const [isPaused, setIsPaused] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [currentMetrics, setCurrentMetrics] = useState<SystemMetric | null>(
+    null
+  );
+  const { toast } = useToast();
 
   const fetchMetrics = useCallback(async () => {
-    if (isPaused) return
+    if (isPaused) return;
 
     try {
       const [cpu, totalMemory, usedMemory, tasks, txBytes, rxBytes] =
-        await invoke<[number, number, number, number, number, number]>("get_system_metrics")
+        await invoke<[number, number, number, number, number, number]>(
+          "get_system_metrics"
+        );
 
-      const timestamp = new Date().toLocaleTimeString()
-      const currentTime = new Date()
+      const timestamp = new Date().toLocaleTimeString();
+      const currentTime = new Date();
 
       // Store current metrics for display
-      setCurrentMetrics({ cpu, totalMemory, usedMemory, tasks, txBytes, rxBytes })
+      setCurrentMetrics({
+        cpu,
+        totalMemory,
+        usedMemory,
+        tasks,
+        txBytes,
+        rxBytes,
+      });
 
       // Calculate values based on mode
-      const ramPercentage = (usedMemory / totalMemory) * 100
-      const txMB = txBytes / (1024 * 1024)
-      const rxMB = rxBytes / (1024 * 1024)
+      const ramPercentage = (usedMemory / totalMemory) * 100;
+      const txMB = txBytes / (1024 * 1024);
+      const rxMB = rxBytes / (1024 * 1024);
 
       setMetricData((prevData) => {
-        let newCpuValue = cpu
-        let newRamValue = ramPercentage
-        let newTxValue = txMB
-        let newRxValue = rxMB
+        let newCpuValue = cpu;
+        let newRamValue = ramPercentage;
+        let newTxValue = txMB;
+        let newRxValue = rxMB;
 
         if (isRelative && prevData.cpu.length > 0) {
-          const maxCpu = Math.max(...prevData.cpu, cpu)
-          const maxRam = Math.max(...prevData.ram, ramPercentage)
-          const maxTx = Math.max(...prevData.tx, txMB)
-          const maxRx = Math.max(...prevData.rx, rxMB)
+          const maxCpu = Math.max(...prevData.cpu, cpu);
+          const maxRam = Math.max(...prevData.ram, ramPercentage);
+          const maxTx = Math.max(...prevData.tx, txMB);
+          const maxRx = Math.max(...prevData.rx, rxMB);
 
-          newCpuValue = maxCpu > 0 ? (cpu / maxCpu) * 100 : 0
-          newRamValue = maxRam > 0 ? (ramPercentage / maxRam) * 100 : 0
-          newTxValue = maxTx > 0 ? (txMB / maxTx) * 100 : 0
-          newRxValue = maxRx > 0 ? (rxMB / maxRx) * 100 : 0
+          newCpuValue = maxCpu > 0 ? (cpu / maxCpu) * 100 : 0;
+          newRamValue = maxRam > 0 ? (ramPercentage / maxRam) * 100 : 0;
+          newTxValue = maxTx > 0 ? (txMB / maxTx) * 100 : 0;
+          newRxValue = maxRx > 0 ? (rxMB / maxRx) * 100 : 0;
         }
 
         return {
@@ -102,32 +156,32 @@ const SystemMetricsGraph: React.FC = () => {
           tx: [...prevData.tx.slice(-(MAX_DATA_POINTS - 1)), newTxValue],
           rx: [...prevData.rx.slice(-(MAX_DATA_POINTS - 1)), newRxValue],
           labels: [...prevData.labels.slice(-(MAX_DATA_POINTS - 1)), timestamp],
-        }
-      })
+        };
+      });
 
-      setLastUpdate(currentTime)
-      setIsLoading(false)
+      setLastUpdate(currentTime);
+      setIsLoading(false);
     } catch (error) {
-      console.error("Error fetching system metrics:", error)
+      console.error("Error fetching system metrics:", error);
       toast({
         title: "Error",
         description: "Failed to fetch system metrics",
         variant: "destructive",
-      })
-      setIsLoading(false)
+      });
+      setIsLoading(false);
     }
-  }, [isPaused, isRelative, toast])
+  }, [isPaused, isRelative, toast]);
 
   useEffect(() => {
-    if (isPaused) return
-    const interval = setInterval(fetchMetrics, intervalTime)
-    return () => clearInterval(interval)
-  }, [fetchMetrics, intervalTime, isPaused])
+    if (isPaused) return;
+    const interval = setInterval(fetchMetrics, intervalTime);
+    return () => clearInterval(interval);
+  }, [fetchMetrics, intervalTime, isPaused]);
 
   // Initial fetch
   useEffect(() => {
-    fetchMetrics()
-  }, [])
+    fetchMetrics();
+  }, []);
 
   const resetChart = () => {
     setMetricData({
@@ -136,13 +190,13 @@ const SystemMetricsGraph: React.FC = () => {
       tx: [],
       rx: [],
       labels: [],
-    })
-    setIsLoading(true)
+    });
+    setIsLoading(true);
     toast({
       title: "Chart Reset",
       description: "Chart data has been cleared",
-    })
-  }
+    });
+  };
 
   const exportData = () => {
     const csvContent = [
@@ -156,184 +210,190 @@ const SystemMetricsGraph: React.FC = () => {
       ]),
     ]
       .map((row) => row.join(","))
-      .join("\n")
+      .join("\n");
 
-    const blob = new Blob([csvContent], { type: "text/csv" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `system-metrics-${new Date().toISOString().split("T")[0]}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `system-metrics-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
 
     toast({
       title: "Export Complete",
       description: "System metrics data exported successfully",
-    })
-  }
+    });
+  };
 
   // Memoize chart data to prevent unnecessary re-renders
-  const chartData = useMemo(() => ({
-    labels: metricData.labels,
-    datasets: [
-      {
-        label: "CPU Usage",
-        data: metricData.cpu,
-        borderColor: "rgb(209, 120, 100)",
-        backgroundColor: "rgba(209, 120, 100, 0.1)",
-        fill: true,
-        tension: 0.4,
-        pointRadius: 0,
-        pointHoverRadius: 4,
-        borderWidth: 2,
-      },
-      {
-        label: "RAM Usage",
-        data: metricData.ram,
-        borderColor: "rgb(40, 148, 120)",
-        backgroundColor: "rgba(40, 148, 120, 0.1)",
-        fill: true,
-        tension: 0.4,
-        pointRadius: 0,
-        pointHoverRadius: 4,
-        borderWidth: 2,
-      },
-      {
-        label: "TX Bandwidth",
-        data: metricData.tx,
-        borderColor: "rgb(39, 80, 97)",
-        backgroundColor: "rgba(39, 80, 97, 0.1)",
-        fill: true,
-        tension: 0.4,
-        pointRadius: 0,
-        pointHoverRadius: 4,
-        borderWidth: 2,
-      },
-      {
-        label: "RX Bandwidth",
-        data: metricData.rx,
-        borderColor: "rgb(209, 179, 67)",
-        backgroundColor: "rgba(209, 179, 67, 0.1)",
-        fill: true,
-        tension: 0.4,
-        pointRadius: 0,
-        pointHoverRadius: 4,
-        borderWidth: 2,
-      },
-    ],
-  }), [metricData])
+  const chartData = useMemo(
+    () => ({
+      labels: metricData.labels,
+      datasets: [
+        {
+          label: "CPU Usage",
+          data: metricData.cpu,
+          borderColor: "rgb(209, 120, 100)",
+          backgroundColor: "rgba(209, 120, 100, 0.1)",
+          fill: true,
+          tension: 0.4,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          borderWidth: 2,
+        },
+        {
+          label: "RAM Usage",
+          data: metricData.ram,
+          borderColor: "rgb(40, 148, 120)",
+          backgroundColor: "rgba(40, 148, 120, 0.1)",
+          fill: true,
+          tension: 0.4,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          borderWidth: 2,
+        },
+        {
+          label: "TX Bandwidth",
+          data: metricData.tx,
+          borderColor: "rgb(39, 80, 97)",
+          backgroundColor: "rgba(39, 80, 97, 0.1)",
+          fill: true,
+          tension: 0.4,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          borderWidth: 2,
+        },
+        {
+          label: "RX Bandwidth",
+          data: metricData.rx,
+          borderColor: "rgb(209, 179, 67)",
+          backgroundColor: "rgba(209, 179, 67, 0.1)",
+          fill: true,
+          tension: 0.4,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          borderWidth: 2,
+        },
+      ],
+    }),
+    [metricData]
+  );
 
   // Memoize chart options to prevent recreation on every render
-  const chartOptions = useMemo(() => ({
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: {
-      mode: "index" as const,
-      intersect: false,
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        max: isRelative ? 100 : undefined,
-        title: {
-          display: true,
-          text: isRelative ? "Relative (%)" : "Value",
-          color: "#ebdbb2",
-        },
-        grid: {
-          color: "#3c3836",
-        },
-        ticks: {
-          color: "#ebdbb2",
-          callback: function(value: any) {
-            if (isRelative) return `${value}%`
-            return value
-          },
-        },
-      },
-      x: {
-        title: {
-          display: true,
-          text: "Time",
-          color: "#ebdbb2",
-        },
-        grid: {
-          color: "#282828",
-        },
-        ticks: {
-          color: "#ebdbb2",
-          maxTicksLimit: 10,
-        },
-      },
-    },
-    plugins: {
-      legend: {
-        display: true,
-        position: "top" as const,
-        labels: {
-          color: "#ebdbb2",
-          usePointStyle: true,
-          padding: 20,
-        },
-      },
-      tooltip: {
+  const chartOptions = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
         mode: "index" as const,
         intersect: false,
-        backgroundColor: "#3c3836",
-        titleColor: "#ebdbb2",
-        bodyColor: "#ebdbb2",
-        borderColor: "#3c3836",
-        borderWidth: 1,
-        callbacks: {
-          label: function(context: any) {
-            let label = context.dataset.label || ""
-            if (label) {
-              label += ": "
-            }
-            if (isRelative) {
-              label += `${context.parsed.y.toFixed(1)}%`
-            } else {
-              if (context.dataset.label?.includes("Bandwidth")) {
-                label += `${context.parsed.y.toFixed(2)} MB`
-              } else {
-                label += `${context.parsed.y.toFixed(1)}%`
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: isRelative ? 100 : undefined,
+          title: {
+            display: true,
+            text: isRelative ? "Relative (%)" : "Value",
+            color: "#ebdbb2",
+          },
+          grid: {
+            color: "#3c3836",
+          },
+          ticks: {
+            color: "#ebdbb2",
+            callback: function (value: any) {
+              if (isRelative) return `${value}%`;
+              return value;
+            },
+          },
+        },
+        x: {
+          title: {
+            display: true,
+            text: "Time",
+            color: "#ebdbb2",
+          },
+          grid: {
+            color: "#282828",
+          },
+          ticks: {
+            color: "#ebdbb2",
+            maxTicksLimit: 10,
+          },
+        },
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: "top" as const,
+          labels: {
+            color: "#ebdbb2",
+            usePointStyle: true,
+            padding: 20,
+          },
+        },
+        tooltip: {
+          mode: "index" as const,
+          intersect: false,
+          backgroundColor: "#3c3836",
+          titleColor: "#ebdbb2",
+          bodyColor: "#ebdbb2",
+          borderColor: "#3c3836",
+          borderWidth: 1,
+          callbacks: {
+            label: function (context: any) {
+              let label = context.dataset.label || "";
+              if (label) {
+                label += ": ";
               }
-            }
-            return label
+              if (isRelative) {
+                label += `${context.parsed.y.toFixed(1)}%`;
+              } else {
+                if (context.dataset.label?.includes("Bandwidth")) {
+                  label += `${context.parsed.y.toFixed(2)} MB`;
+                } else {
+                  label += `${context.parsed.y.toFixed(1)}%`;
+                }
+              }
+              return label;
+            },
           },
         },
-      },
-      zoom: {
         zoom: {
-          wheel: {
-            enabled: true,
+          zoom: {
+            wheel: {
+              enabled: true,
+            },
+            pinch: {
+              enabled: true,
+            },
+            mode: "xy" as const,
           },
-          pinch: {
+          pan: {
             enabled: true,
+            mode: "xy" as const,
           },
-          mode: "xy" as const,
-        },
-        pan: {
-          enabled: true,
-          mode: "xy" as const,
         },
       },
-    },
-    animation: {
-      duration: 200, // Reduced from 750ms to 200ms
-      easing: "easeOutQuart" as const,
-    },
-  }), [isRelative])
+      animation: {
+        duration: 200, // Reduced from 750ms to 200ms
+        easing: "easeOutQuart" as const,
+      },
+    }),
+    [isRelative]
+  );
 
   const formatBytes = (bytes: number) => {
-    const gb = bytes / (1024 * 1024 * 1024)
-    return `${gb.toFixed(1)} GB`
-  }
+    const gb = bytes / (1024 * 1024 * 1024);
+    return `${gb.toFixed(1)} GB`;
+  };
 
   const formatMB = (bytes: number) => {
-    const mb = bytes / (1024 * 1024)
-    return `${mb.toFixed(2)} MB`
-  }
+    const mb = bytes / (1024 * 1024);
+    return `${mb.toFixed(2)} MB`;
+  };
 
   return (
     <div className="space-y-6">
@@ -345,10 +405,10 @@ const SystemMetricsGraph: React.FC = () => {
               <Cpu className="h-8 w-8 text-blue-500 mr-3" />
               <div>
                 <p className="text-sm font-medium">CPU Usage</p>
-                <p className="text-2xl font-bold">{currentMetrics.cpu.toFixed(1)}%</p>
-                <p className="text-xs">
-                  Active Tasks: {currentMetrics.tasks}
+                <p className="text-2xl font-bold">
+                  {currentMetrics.cpu.toFixed(1)}%
                 </p>
+                <p className="text-xs">Active Tasks: {currentMetrics.tasks}</p>
               </div>
             </CardContent>
           </Card>
@@ -359,10 +419,15 @@ const SystemMetricsGraph: React.FC = () => {
               <div>
                 <p className="text-sm font-medium">RAM Usage</p>
                 <p className="text-2xl font-bold">
-                  {((currentMetrics.usedMemory / currentMetrics.totalMemory) * 100).toFixed(1)}%
+                  {(
+                    (currentMetrics.usedMemory / currentMetrics.totalMemory) *
+                    100
+                  ).toFixed(1)}
+                  %
                 </p>
                 <p className="text-xs">
-                  {formatBytes(currentMetrics.usedMemory)} / {formatBytes(currentMetrics.totalMemory)}
+                  {formatBytes(currentMetrics.usedMemory)} /{" "}
+                  {formatBytes(currentMetrics.totalMemory)}
                 </p>
               </div>
             </CardContent>
@@ -373,7 +438,9 @@ const SystemMetricsGraph: React.FC = () => {
               <TrendingUp className="h-8 w-8 text-green-500 mr-3" />
               <div>
                 <p className="text-sm font-medium">TX Bandwidth</p>
-                <p className="text-2xl font-bold">{formatMB(currentMetrics.txBytes)}</p>
+                <p className="text-2xl font-bold">
+                  {formatMB(currentMetrics.txBytes)}
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -383,7 +450,9 @@ const SystemMetricsGraph: React.FC = () => {
               <Wifi className="h-8 w-8 text-cyan-500 mr-3" />
               <div>
                 <p className="text-sm font-medium">RX Bandwidth</p>
-                <p className="text-2xl font-bold">{formatMB(currentMetrics.rxBytes)}</p>
+                <p className="text-2xl font-bold">
+                  {formatMB(currentMetrics.rxBytes)}
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -399,7 +468,9 @@ const SystemMetricsGraph: React.FC = () => {
                 <Activity className="h-5 w-5" />
                 System Performance Monitor
               </CardTitle>
-              <CardDescription>Real-time system metrics visualization with interactive controls</CardDescription>
+              <CardDescription>
+                Real-time system metrics visualization with interactive controls
+              </CardDescription>
             </div>
             <div className="flex items-center gap-2">
               {lastUpdate && (
@@ -428,7 +499,9 @@ const SystemMetricsGraph: React.FC = () => {
                 </Label>
                 <Select
                   value={intervalTime.toString()}
-                  onValueChange={(value) => setIntervalTime(Number.parseInt(value, 10))}
+                  onValueChange={(value) =>
+                    setIntervalTime(Number.parseInt(value, 10))
+                  }
                 >
                   <SelectTrigger className="w-[140px]">
                     <SelectValue />
@@ -448,7 +521,11 @@ const SystemMetricsGraph: React.FC = () => {
 
               {/* Relative Mode Toggle */}
               <div className="flex items-center gap-2">
-                <Switch id="relativeMode" checked={isRelative} onCheckedChange={setIsRelative} />
+                <Switch
+                  id="relativeMode"
+                  checked={isRelative}
+                  onCheckedChange={setIsRelative}
+                />
                 <Label htmlFor="relativeMode" className="text-sm font-medium">
                   Relative Mode
                 </Label>
@@ -463,16 +540,30 @@ const SystemMetricsGraph: React.FC = () => {
                 onClick={() => setIsPaused(!isPaused)}
                 className={cn("gap-2", isPaused && "text-green-600")}
               >
-                {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+                {isPaused ? (
+                  <Play className="h-4 w-4" />
+                ) : (
+                  <Pause className="h-4 w-4" />
+                )}
                 {isPaused ? "Resume" : "Pause"}
               </Button>
 
-              <Button variant="outline" size="sm" onClick={resetChart} className="gap-2 bg-transparent">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={resetChart}
+                className="gap-2 bg-transparent"
+              >
                 <RotateCcw className="h-4 w-4" />
                 Reset
               </Button>
 
-              <Button variant="outline" size="sm" onClick={exportData} className="gap-2 bg-transparent">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exportData}
+                className="gap-2 bg-transparent"
+              >
                 <Download className="h-4 w-4" />
                 Export
               </Button>
@@ -506,7 +597,7 @@ const SystemMetricsGraph: React.FC = () => {
         </CardContent>
       </Card>
     </div>
-  )
-}
+  );
+};
 
-export default SystemMetricsGraph
+export default SystemMetricsGraph;
