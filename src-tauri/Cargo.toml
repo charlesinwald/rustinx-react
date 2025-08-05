@@ -25,6 +25,11 @@ tauri-sys = { git = "https://github.com/JonasKruckenberg/tauri-sys" }
 tauri-plugin-single-instance = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
 sysinfo = "0.31.2"
 actix-web = "4.9.0"
+actix-session = { version = "0.8.0", features = ["cookie-session"] }
+actix-files = "0.6.5"
+rand = "0.8"
+futures-util = "0.3.31"
+lazy_static = "1.4.0"
 [target.'cfg(unix)'.dependencies]
 nix = "0.28.0"
 [target.'cfg(windows)'.dependencies]

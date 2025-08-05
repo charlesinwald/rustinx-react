@@ -6,22 +6,31 @@ import Sidebar from "./components/Sidebar/Sidebar";
 import Config from "./components/Config/Config";
 import { invoke } from "@tauri-apps/api/tauri";
 import Systemd from "./components/Systemd/Systemd";
+import Login from "./components/Login";
 
 function App() {
   const [currentView, setCurrentView] = useState("logs");
-  const [isRoot, setIsRoot] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const checkAuthentication = async () => {
+    try {
+      const response = await fetch("/api/authenticated");
+      setIsAuthenticated(response.ok);
+    } catch {
+      setIsAuthenticated(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Check if the app is running as root
-    invoke("check_sudo_status")
-      .then((rootStatus) => {
-        setIsRoot(rootStatus);
-      })
-      .catch((error) => {
-        console.error("Failed to check root status:", error);
-        setIsRoot(false);
-      });
+    checkAuthentication();
   }, []);
+
+  const handleLoginSuccess = () => {
+    setIsAuthenticated(true);
+  };
 
   const handleLinkClick = (link) => {
     setCurrentView(link.view);
@@ -34,15 +43,16 @@ function App() {
     { label: "System Logs", view: "systemdLogs" },
   ];
 
-  if (!isRoot) {
+  if (isLoading) {
     return (
-      <div className="flex h-screen flex-col items-center justify-center bg-background text-foreground">
-        <div className="text-center p-12 bg-card text-card-foreground rounded-lg shadow-lg">
-          <h1 className="text-3xl font-bold text-destructive mb-4">Error: Insufficient Privileges</h1>
-          <p className="text-lg">This application needs to be run as root. Please restart with sudo.</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">Loading...</div>
       </div>
     );
+  }
+
+  if (!isAuthenticated) {
+    return <Login onLoginSuccess={handleLoginSuccess} />;
   }
 
   return (

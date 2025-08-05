@@ -1,23 +1,43 @@
 
 use sysinfo::System;
-use std::process::Command;
+use std::process::{Command, Stdio};
 use std::env::consts::OS;
+use std::io::Write;
+use crate::auth::get_stored_password;
+
+fn execute_sudo_command(args: Vec<&str>) -> Result<std::process::Output, String> {
+    let password = get_stored_password().ok_or("No sudo password stored")?;
+    
+    let mut child = Command::new("sudo")
+        .arg("-S")
+        .args(args)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|e| e.to_string())?;
+
+    if let Some(mut stdin) = child.stdin.take() {
+        stdin
+            .write_all(format!("{}\n", password).as_bytes())
+            .map_err(|e| e.to_string())?;
+    }
+
+    child.wait_with_output().map_err(|e| e.to_string())
+}
 
 #[tauri::command]
 pub(crate) fn restart_nginx() -> Result<(), String> {
     let output = match OS {
-        "linux" => Command::new("systemctl")
-            .arg("restart")
-            .arg("nginx")
-            .output(),
+        "linux" => execute_sudo_command(vec!["systemctl", "restart", "nginx"])?,
         "macos" => Command::new("brew")
             .arg("services")
             .arg("restart")
             .arg("nginx")
-            .output(),
+            .output()
+            .map_err(|e| e.to_string())?,
         _ => return Err("Unsupported OS".into()),
-    }
-    .map_err(|e| e.to_string())?;
+    };
 
     if output.status.success() {
         println!("Nginx restarted");
@@ -31,18 +51,15 @@ pub(crate) fn restart_nginx() -> Result<(), String> {
 #[tauri::command]
 pub(crate) fn start_nginx() -> Result<(), String> {
     let output = match OS {
-        "linux" => Command::new("systemctl")
-            .arg("start")
-            .arg("nginx")
-            .output(),
+        "linux" => execute_sudo_command(vec!["systemctl", "start", "nginx"])?,
         "macos" => Command::new("brew")
             .arg("services")
             .arg("start")
             .arg("nginx")
-            .output(),
+            .output()
+            .map_err(|e| e.to_string())?,
         _ => return Err("Unsupported OS".into()),
-    }
-    .map_err(|e| e.to_string())?;
+    };
 
     if output.status.success() {
         println!("Nginx started");
@@ -56,18 +73,15 @@ pub(crate) fn start_nginx() -> Result<(), String> {
 #[tauri::command]
 pub(crate) fn stop_nginx() -> Result<(), String> {
     let output = match OS {
-        "linux" => Command::new("systemctl")
-            .arg("stop")
-            .arg("nginx")
-            .output(),
+        "linux" => execute_sudo_command(vec!["systemctl", "stop", "nginx"])?,
         "macos" => Command::new("brew")
             .arg("services")
             .arg("stop")
             .arg("nginx")
-            .output(),
+            .output()
+            .map_err(|e| e.to_string())?,
         _ => return Err("Unsupported OS".into()),
-    }
-    .map_err(|e| e.to_string())?;
+    };
 
     if output.status.success() {
         println!("Nginx stopped");

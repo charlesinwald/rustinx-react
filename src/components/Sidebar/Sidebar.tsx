@@ -26,7 +26,7 @@ export default function Sidebar({
     <div className="flex h-full w-64 flex-col border-r bg-background">
       {/* Header */}
       <div className="flex h-16 items-center border-b px-6">
-        <h2 className="text-xl font-bold text-foreground">Rustinx</h2>
+        <h2 className="text-xl text-foreground font-extrabold">Rustinx</h2>
       </div>
 
       {/* Navigation */}

@@ -1,12 +1,9 @@
-#![cfg_attr(
-    all(not(debug_assertions), target_os = "windows"),
-    windows_subsystem = "windows"
-)]
-
-use actix_web::{App, HttpServer};
+use actix_session::{storage::CookieSessionStore, SessionMiddleware};
+use actix_web::{cookie::Key, web, App, HttpServer};
 use tauri::{CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu};
+use actix_files as fs;
 
-
+mod auth;
 mod actix_routes;
 mod commands;
 mod config;
@@ -19,14 +16,27 @@ mod util;
 async fn main() {
     std::env::set_var("GDK_BACKEND", "x11");
     std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
+
     // Start the Actix Web server in a separate async task
     let actix_server = tokio::spawn(async {
-        HttpServer::new(|| App::new().configure(actix_routes::configure))
-            .bind("0.0.0.0:8080")
-            .expect("Failed to bind to address")
-            .run()
-            .await
-            .expect("Failed to start Actix web server");
+        HttpServer::new(move || {
+            App::new()
+                .wrap(SessionMiddleware::new(
+                    CookieSessionStore::default(),
+                    Key::from(&[0; 64]),
+                ))
+                .service(
+                    web::scope("/api")
+                        .route("/login", web::post().to(auth::login))
+                        .configure(actix_routes::configure),
+                )
+                .service(fs::Files::new("/", "../dist").index_file("index.html"))
+        })
+        .bind("0.0.0.0:8080")
+        .expect("Failed to bind to address")
+        .run()
+        .await
+        .expect("Failed to start Actix web server");
     });
 
     // Run the Tauri application
