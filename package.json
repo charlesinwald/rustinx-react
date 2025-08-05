@@ -6,7 +6,8 @@
 		"tauri": "tauri",
 		"tauri:dev": "tauri dev",
 		"tauri:build": "tauri build",
-		"dev": "parcel index.html",
+		"dev": "parcel index.html --port 1234 --host 0.0.0.0",
+		"dev:browser": "parcel index.html --port 3000 --host 0.0.0.0 --open",
 		"build": "parcel build index.html"
 	},
 	"keywords": [

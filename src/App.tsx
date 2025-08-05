@@ -4,7 +4,9 @@ import ControlPanel from "./components/ControlPanel";
 import NginxStatus from "./components/Status/Status";
 import Sidebar from "./components/Sidebar/Sidebar";
 import Config from "./components/Config/Config";
-import { invoke } from "@tauri-apps/api/tauri";
+// Conditionally import Tauri APIs only when available
+const isTauri = typeof window !== 'undefined' && (window as any).__TAURI__;
+const invoke = isTauri ? require("@tauri-apps/api/tauri").invoke : null;
 import Systemd from "./components/Systemd/Systemd";
 import Login from "./components/Login";
 

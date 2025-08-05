@@ -1,5 +1,8 @@
 import React, { useState } from "react"
-import { invoke } from "@tauri-apps/api/tauri"
+
+// Check if we're running in Tauri environment
+const isTauri = typeof window !== 'undefined' && (window as any).__TAURI__;
+const invoke = isTauri ? require("@tauri-apps/api/tauri").invoke : null;
 import { Button } from "./ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
 import { Badge } from "./ui/badge"
@@ -54,6 +57,12 @@ export default function ControlPanel() {
   }
 
   const startNginx = async () => {
+    if (!isTauri || !invoke) {
+      setLastResponse("Demo mode: Nginx start command simulated")
+      showSuccess("Demo mode: Nginx start simulated")
+      return
+    }
+
     setLoading("start", true)
     try {
       const response = await invoke<string>("start_nginx")
@@ -69,6 +78,12 @@ export default function ControlPanel() {
   }
 
   const restartNginx = async () => {
+    if (!isTauri || !invoke) {
+      setLastResponse("Demo mode: Nginx restart command simulated")
+      showSuccess("Demo mode: Nginx restart simulated")
+      return
+    }
+
     setLoading("restart", true)
     try {
       const response = await invoke<string>("restart_nginx")
@@ -84,6 +99,12 @@ export default function ControlPanel() {
   }
 
   const stopNginx = async () => {
+    if (!isTauri || !invoke) {
+      setLastResponse("Demo mode: Nginx stop command simulated")
+      showSuccess("Demo mode: Nginx stop simulated")
+      return
+    }
+
     setLoading("stop", true)
     try {
       const response = await invoke<string>("stop_nginx")

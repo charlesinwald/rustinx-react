@@ -1,6 +1,11 @@
 import { useState, useEffect } from "react";
-import { listen } from "@tauri-apps/api/event";
-import { invoke } from "@tauri-apps/api/tauri";
+
+// Check if we're running in Tauri environment
+const isTauri = typeof window !== 'undefined' && (window as any).__TAURI__;
+
+// Conditionally import Tauri APIs
+const listen = isTauri ? require("@tauri-apps/api/event").listen : null;
+const invoke = isTauri ? require("@tauri-apps/api/tauri").invoke : null;
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
@@ -22,6 +27,13 @@ export default function NginxStatus() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    if (!isTauri || !listen) {
+      // In browser mode, set demo/placeholder values
+      setNginxStatus("Demo Mode");
+      setIsLoading(false);
+      return;
+    }
+
     const unlistenNginxStatus = listen("nginx_status_check", (event) => {
       console.log("Nginx Status:", event.payload);
       setNginxStatus(event.payload as string);
@@ -57,6 +69,14 @@ export default function NginxStatus() {
           variant: "destructive" as const,
           label: "Inactive",
         };
+      case "demo mode":
+        return {
+          icon: Server,
+          color: "text-blue-600",
+          bgColor: "bg-blue-50 border-blue-200",
+          variant: "secondary" as const,
+          label: "Demo Mode",
+        };
       default:
         return {
           icon: Loader2,
@@ -73,6 +93,12 @@ export default function NginxStatus() {
   };
 
   async function fetchNginxConfPath() {
+    if (!isTauri || !invoke) {
+      // In browser mode, set demo path
+      setNginxConfigPath("/etc/nginx/nginx.conf (Demo)");
+      return;
+    }
+
     try {
       const confPath = await invoke<string>("get_nginx_conf_path");
       console.log(`NGINX configuration file path: ${confPath}`);
@@ -83,6 +109,12 @@ export default function NginxStatus() {
   }
 
   async function openFile(filePath: string) {
+    if (!isTauri || !invoke) {
+      // In browser mode, show alert
+      alert(`Demo mode: Would open ${filePath}`);
+      return;
+    }
+
     try {
       await invoke("open_file", { filePath });
       console.log(`Opened file: ${filePath}`);
