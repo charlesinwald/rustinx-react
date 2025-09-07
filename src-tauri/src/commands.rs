@@ -6,6 +6,15 @@ use std::io::Write;
 use crate::auth::get_stored_password;
 
 fn execute_sudo_command(args: Vec<&str>) -> Result<std::process::Output, String> {
+    // For Tauri (desktop mode), let sudo prompt for password directly
+    // This will open a GUI password prompt on most desktop environments
+    Command::new("sudo")
+        .args(args)
+        .output()
+        .map_err(|e| e.to_string())
+}
+
+fn execute_sudo_command_with_stored_password(args: Vec<&str>) -> Result<std::process::Output, String> {
     let password = get_stored_password().ok_or("No sudo password stored")?;
     
     let mut child = Command::new("sudo")
@@ -27,7 +36,7 @@ fn execute_sudo_command(args: Vec<&str>) -> Result<std::process::Output, String>
 }
 
 #[tauri::command]
-pub(crate) fn restart_nginx() -> Result<(), String> {
+pub(crate) fn restart_nginx() -> Result<String, String> {
     let output = match OS {
         "linux" => execute_sudo_command(vec!["systemctl", "restart", "nginx"])?,
         "macos" => Command::new("brew")
@@ -40,8 +49,9 @@ pub(crate) fn restart_nginx() -> Result<(), String> {
     };
 
     if output.status.success() {
-        println!("Nginx restarted");
-        Ok(())
+        let message = "Nginx restarted successfully";
+        println!("{}", message);
+        Ok(message.to_string())
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
         Err(format!("Failed to restart Nginx: {}", stderr))
@@ -49,7 +59,7 @@ pub(crate) fn restart_nginx() -> Result<(), String> {
 }
 
 #[tauri::command]
-pub(crate) fn start_nginx() -> Result<(), String> {
+pub(crate) fn start_nginx() -> Result<String, String> {
     let output = match OS {
         "linux" => execute_sudo_command(vec!["systemctl", "start", "nginx"])?,
         "macos" => Command::new("brew")
@@ -62,8 +72,9 @@ pub(crate) fn start_nginx() -> Result<(), String> {
     };
 
     if output.status.success() {
-        println!("Nginx started");
-        Ok(())
+        let message = "Nginx started successfully";
+        println!("{}", message);
+        Ok(message.to_string())
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
         Err(format!("Failed to start Nginx: {}", stderr))
@@ -71,7 +82,7 @@ pub(crate) fn start_nginx() -> Result<(), String> {
 }
 
 #[tauri::command]
-pub(crate) fn stop_nginx() -> Result<(), String> {
+pub(crate) fn stop_nginx() -> Result<String, String> {
     let output = match OS {
         "linux" => execute_sudo_command(vec!["systemctl", "stop", "nginx"])?,
         "macos" => Command::new("brew")
@@ -84,8 +95,9 @@ pub(crate) fn stop_nginx() -> Result<(), String> {
     };
 
     if output.status.success() {
-        println!("Nginx stopped");
-        Ok(())
+        let message = "Nginx stopped successfully";
+        println!("{}", message);
+        Ok(message.to_string())
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
         Err(format!("Failed to stop Nginx: {}", stderr))

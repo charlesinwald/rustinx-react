@@ -63,7 +63,7 @@ export default function ControlPanel() {
         const response = await invoke<string>("start_nginx")
         console.log("Nginx started:", response)
         setLastResponse(response)
-        showSuccess("Nginx started successfully")
+        showSuccess(response)
       } else {
         // Use HTTP API in browser mode
         const response = await fetch('/api/nginx/start', {
@@ -81,7 +81,9 @@ export default function ControlPanel() {
       }
     } catch (error) {
       console.error("Error starting Nginx:", error)
-      showError(`Failed to start Nginx: ${error}`)
+      const errorMessage = typeof error === 'string' ? error : String(error)
+      setLastResponse(`Error: ${errorMessage}`)
+      showError(`Failed to start Nginx: ${errorMessage}`)
     } finally {
       setLoading("start", false)
     }
@@ -94,7 +96,7 @@ export default function ControlPanel() {
         const response = await invoke<string>("restart_nginx")
         console.log("Nginx restarted:", response)
         setLastResponse(response)
-        showSuccess("Nginx restarted successfully")
+        showSuccess(response)
       } else {
         // Use HTTP API in browser mode
         const response = await fetch('/api/nginx/restart', {
@@ -112,7 +114,9 @@ export default function ControlPanel() {
       }
     } catch (error) {
       console.error("Error restarting Nginx:", error)
-      showError(`Failed to restart Nginx: ${error}`)
+      const errorMessage = typeof error === 'string' ? error : String(error)
+      setLastResponse(`Error: ${errorMessage}`)
+      showError(`Failed to restart Nginx: ${errorMessage}`)
     } finally {
       setLoading("restart", false)
     }
@@ -125,7 +129,7 @@ export default function ControlPanel() {
         const response = await invoke<string>("stop_nginx")
         console.log("Nginx stopped:", response)
         setLastResponse(response)
-        showSuccess("Nginx stopped successfully")
+        showSuccess(response)
       } else {
         // Use HTTP API in browser mode
         const response = await fetch('/api/nginx/stop', {
@@ -143,7 +147,9 @@ export default function ControlPanel() {
       }
     } catch (error) {
       console.error("Error stopping Nginx:", error)
-      showError(`Failed to stop Nginx: ${error}`)
+      const errorMessage = typeof error === 'string' ? error : String(error)
+      setLastResponse(`Error: ${errorMessage}`)
+      showError(`Failed to stop Nginx: ${errorMessage}`)
     } finally {
       setLoading("stop", false)
     }
