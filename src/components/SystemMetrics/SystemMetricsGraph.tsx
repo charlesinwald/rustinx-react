@@ -109,10 +109,34 @@ const SystemMetricsGraph: React.FC = memo(() => {
     if (isPaused) return;
 
     try {
-      const [cpu, totalMemory, usedMemory, tasks, txBytes, rxBytes] =
-        await invoke<[number, number, number, number, number, number]>(
-          "get_system_metrics"
-        );
+      let cpu, totalMemory, usedMemory, tasks, txBytes, rxBytes, workerCount;
+
+      // Check if we're running in Tauri context
+      if (typeof window !== 'undefined' && window.__TAURI_IPC__) {
+        [cpu, totalMemory, usedMemory, tasks, workerCount, txBytes, rxBytes] = 
+          await invoke<[number, number, number, number, number, number, number]>(
+            "get_system_metrics"
+          );
+      } else {
+        // Running in browser mode - use HTTP API
+        const response = await fetch('/api/system-metrics', {
+          method: 'GET',
+          credentials: 'include',
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          cpu = data.cpu;
+          totalMemory = data.totalMemory;
+          usedMemory = data.usedMemory;
+          tasks = data.tasks;
+          workerCount = data.workerCount;
+          txBytes = data.txBytes;
+          rxBytes = data.rxBytes;
+        } else {
+          throw new Error(`HTTP API error: ${response.statusText}`);
+        }
+      }
 
       const timestamp = new Date().toLocaleTimeString();
       const currentTime = new Date();

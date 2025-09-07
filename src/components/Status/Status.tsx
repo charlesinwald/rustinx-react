@@ -27,28 +27,49 @@ export default function NginxStatus() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!isTauri || !listen) {
-      // In browser mode, set demo/placeholder values
-      setNginxStatus("Demo Mode");
-      setIsLoading(false);
-      return;
-    }
+    const fetchNginxStatus = async () => {
+      if (isTauri && listen) {
+        // Use Tauri events in desktop mode
+        const unlistenNginxStatus = listen("nginx_status_check", (event) => {
+          console.log("Nginx Status:", event.payload);
+          setNginxStatus(event.payload as string);
+          setIsLoading(false);
+        });
 
-    const unlistenNginxStatus = listen("nginx_status_check", (event) => {
-      console.log("Nginx Status:", event.payload);
-      setNginxStatus(event.payload as string);
-      setIsLoading(false);
-    });
+        const unlistenConfigCheck = listen("nginx_config_check", (event) => {
+          console.log("Nginx Config Check:", event.payload);
+          setConfigEvent(event.payload as string);
+        });
 
-    const unlistenConfigCheck = listen("nginx_config_check", (event) => {
-      console.log("Nginx Config Check:", event.payload);
-      setConfigEvent(event.payload as string);
-    });
-
-    return () => {
-      unlistenNginxStatus.then((unlistenFn) => unlistenFn());
-      unlistenConfigCheck.then((unlistenFn) => unlistenFn());
+        return () => {
+          unlistenNginxStatus.then((unlistenFn) => unlistenFn());
+          unlistenConfigCheck.then((unlistenFn) => unlistenFn());
+        };
+      } else {
+        // Use HTTP API in browser mode
+        try {
+          const response = await fetch('/api/nginx/status', {
+            method: 'GET',
+            credentials: 'include',
+          });
+          const data = await response.json();
+          setNginxStatus(data.status);
+          setIsLoading(false);
+        } catch (error) {
+          console.error("Error fetching nginx status:", error);
+          setNginxStatus("error");
+          setIsLoading(false);
+        }
+      }
     };
+
+    fetchNginxStatus();
+    
+    // Poll status every 30 seconds in browser mode
+    if (!isTauri) {
+      const interval = setInterval(fetchNginxStatus, 30000);
+      return () => clearInterval(interval);
+    }
   }, []);
 
   const getStatusConfig = (status: string) => {
@@ -69,13 +90,13 @@ export default function NginxStatus() {
           variant: "destructive" as const,
           label: "Inactive",
         };
-      case "demo mode":
+      case "error":
         return {
-          icon: Server,
-          color: "text-blue-600",
-          bgColor: "bg-blue-50 border-blue-200",
-          variant: "secondary" as const,
-          label: "Demo Mode",
+          icon: XCircle,
+          color: "text-red-600",
+          bgColor: "bg-red-50 border-red-200",
+          variant: "destructive" as const,
+          label: "Error",
         };
       default:
         return {
@@ -93,33 +114,37 @@ export default function NginxStatus() {
   };
 
   async function fetchNginxConfPath() {
-    if (!isTauri || !invoke) {
-      // In browser mode, set demo path
-      setNginxConfigPath("/etc/nginx/nginx.conf (Demo)");
-      return;
-    }
-
     try {
-      const confPath = await invoke<string>("get_nginx_conf_path");
-      console.log(`NGINX configuration file path: ${confPath}`);
-      setNginxConfigPath(confPath);
+      if (isTauri && invoke) {
+        const confPath = await invoke<string>("get_nginx_conf_path");
+        console.log(`NGINX configuration file path: ${confPath}`);
+        setNginxConfigPath(confPath);
+      } else {
+        // Use HTTP API in browser mode
+        const response = await fetch('/api/nginx/config-path', {
+          method: 'GET',
+          credentials: 'include',
+        });
+        const data = await response.json();
+        setNginxConfigPath(data.path);
+      }
     } catch (error) {
       console.error("Error fetching NGINX configuration path:", error);
+      setNginxConfigPath("/etc/nginx/nginx.conf");
     }
   }
 
   async function openFile(filePath: string) {
-    if (!isTauri || !invoke) {
-      // In browser mode, show alert
-      alert(`Demo mode: Would open ${filePath}`);
-      return;
-    }
-
-    try {
-      await invoke("open_file", { filePath });
-      console.log(`Opened file: ${filePath}`);
-    } catch (error) {
-      console.error("Failed to open file:", error);
+    if (isTauri && invoke) {
+      try {
+        await invoke("open_file", { filePath });
+        console.log(`Opened file: ${filePath}`);
+      } catch (error) {
+        console.error("Failed to open file:", error);
+      }
+    } else {
+      // In browser mode, show config path info
+      alert(`Config file location: ${filePath}\n\nIn browser mode, you'll need to edit this file directly on the server.`);
     }
   }
 

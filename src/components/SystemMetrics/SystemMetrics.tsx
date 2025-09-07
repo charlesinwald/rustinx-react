@@ -11,21 +11,45 @@ const SystemMetrics: React.FC = memo(() => {
   const [totalMemory, setTotalMemory] = useState<number>(0);
   const [usedMemory, setUsedMemory] = useState<number>(0);
   const [tasks, setTasks] = useState<number>(0);
+  const [workerCount, setWorkerCount] = useState<number>(0);
   const [txBytes, setTxBytes] = useState<number>(0);
   const [rxBytes, setRxBytes] = useState<number>(0);
 
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
-        const [cpu, totalMem, usedMem, tasks, txBytes, rxBytes] = await invoke<[number, number, number, number, number, number]>(
-          "get_system_metrics"
-        );
-        setCpuUsage(cpu);
-        setTotalMemory(totalMem);
-        setUsedMemory(usedMem);
-        setTasks(tasks);
-        setTxBytes(txBytes);
-        setRxBytes(rxBytes);
+        // Check if we're running in Tauri context
+        if (typeof window !== 'undefined' && window.__TAURI_IPC__) {
+          const [cpu, totalMem, usedMem, tasks, workerCount, txBytes, rxBytes] = await invoke<[number, number, number, number, number, number, number]>(
+            "get_system_metrics"
+          );
+          setCpuUsage(cpu);
+          setTotalMemory(totalMem);
+          setUsedMemory(usedMem);
+          setTasks(tasks);
+          setWorkerCount(workerCount);
+          setTxBytes(txBytes);
+          setRxBytes(rxBytes);
+        } else {
+          // Running in browser mode - use HTTP API
+          const response = await fetch('/api/system-metrics', {
+            method: 'GET',
+            credentials: 'include', // Include session cookies
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            setCpuUsage(data.cpu);
+            setTotalMemory(data.totalMemory);
+            setUsedMemory(data.usedMemory);
+            setTasks(data.tasks);
+            setWorkerCount(data.workerCount);
+            setTxBytes(data.txBytes);
+            setRxBytes(data.rxBytes);
+          } else {
+            console.error("Failed to fetch system metrics from HTTP API:", response.statusText);
+          }
+        }
       } catch (error) {
         console.error("Failed to fetch system metrics:", error);
       }

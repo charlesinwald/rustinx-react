@@ -57,18 +57,28 @@ export default function ControlPanel() {
   }
 
   const startNginx = async () => {
-    if (!isTauri || !invoke) {
-      setLastResponse("Demo mode: Nginx start command simulated")
-      showSuccess("Demo mode: Nginx start simulated")
-      return
-    }
-
     setLoading("start", true)
     try {
-      const response = await invoke<string>("start_nginx")
-      console.log("Nginx started:", response)
-      setLastResponse(response)
-      showSuccess("Nginx started successfully")
+      if (isTauri && invoke) {
+        const response = await invoke<string>("start_nginx")
+        console.log("Nginx started:", response)
+        setLastResponse(response)
+        showSuccess("Nginx started successfully")
+      } else {
+        // Use HTTP API in browser mode
+        const response = await fetch('/api/nginx/start', {
+          method: 'POST',
+          credentials: 'include',
+        })
+        const data = await response.json()
+        
+        if (data.success) {
+          setLastResponse(data.message)
+          showSuccess(data.message)
+        } else {
+          throw new Error(data.error)
+        }
+      }
     } catch (error) {
       console.error("Error starting Nginx:", error)
       showError(`Failed to start Nginx: ${error}`)
@@ -78,18 +88,28 @@ export default function ControlPanel() {
   }
 
   const restartNginx = async () => {
-    if (!isTauri || !invoke) {
-      setLastResponse("Demo mode: Nginx restart command simulated")
-      showSuccess("Demo mode: Nginx restart simulated")
-      return
-    }
-
     setLoading("restart", true)
     try {
-      const response = await invoke<string>("restart_nginx")
-      console.log("Nginx restarted:", response)
-      setLastResponse(response)
-      showSuccess("Nginx restarted successfully")
+      if (isTauri && invoke) {
+        const response = await invoke<string>("restart_nginx")
+        console.log("Nginx restarted:", response)
+        setLastResponse(response)
+        showSuccess("Nginx restarted successfully")
+      } else {
+        // Use HTTP API in browser mode
+        const response = await fetch('/api/nginx/restart', {
+          method: 'POST',
+          credentials: 'include',
+        })
+        const data = await response.json()
+        
+        if (data.success) {
+          setLastResponse(data.message)
+          showSuccess(data.message)
+        } else {
+          throw new Error(data.error)
+        }
+      }
     } catch (error) {
       console.error("Error restarting Nginx:", error)
       showError(`Failed to restart Nginx: ${error}`)
@@ -99,18 +119,28 @@ export default function ControlPanel() {
   }
 
   const stopNginx = async () => {
-    if (!isTauri || !invoke) {
-      setLastResponse("Demo mode: Nginx stop command simulated")
-      showSuccess("Demo mode: Nginx stop simulated")
-      return
-    }
-
     setLoading("stop", true)
     try {
-      const response = await invoke<string>("stop_nginx")
-      console.log("Nginx stopped:", response)
-      setLastResponse(response)
-      showSuccess("Nginx stopped successfully")
+      if (isTauri && invoke) {
+        const response = await invoke<string>("stop_nginx")
+        console.log("Nginx stopped:", response)
+        setLastResponse(response)
+        showSuccess("Nginx stopped successfully")
+      } else {
+        // Use HTTP API in browser mode
+        const response = await fetch('/api/nginx/stop', {
+          method: 'POST',
+          credentials: 'include',
+        })
+        const data = await response.json()
+        
+        if (data.success) {
+          setLastResponse(data.message)
+          showSuccess(data.message)
+        } else {
+          throw new Error(data.error)
+        }
+      }
     } catch (error) {
       console.error("Error stopping Nginx:", error)
       showError(`Failed to stop Nginx: ${error}`)

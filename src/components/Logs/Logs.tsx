@@ -1,5 +1,8 @@
-import { useState, useEffect, useMemo, memo } from "react";
-import { listen } from "@tauri-apps/api/event";
+import { useState, useEffect, useMemo, memo, useCallback } from "react";
+
+// Check if we're running in Tauri environment
+const isTauri = typeof window !== 'undefined' && (window as any).__TAURI__;
+const listen = isTauri ? require("@tauri-apps/api/event").listen : null;
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { ScrollArea } from "../ui/scroll-area";
 import { Separator } from "../ui/separator";
@@ -10,6 +13,7 @@ import {
   EyeOff,
   Activity,
   AlertTriangle,
+  RefreshCw,
 } from "lucide-react";
 import { useToast } from "../../hooks/use-toast";
 import { Button } from "../ui/button";
@@ -29,31 +33,67 @@ const Logs = memo(() => {
   const [rawMode, setRawMode] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    const handleAccessEvent = (event: LogEvent) => {
-      setAccessLogs((prevLogs) => {
-        const newLogs = [...prevLogs, event.payload];
-        // Keep only the last MAX_LOG_LINES entries
-        return newLogs.slice(-MAX_LOG_LINES);
-      });
-    };
+  const fetchLogs = useCallback(async () => {
+    try {
+      // Fetch both access and error logs
+      const [accessResponse, errorResponse] = await Promise.all([
+        fetch('/api/nginx/logs?type=access&lines=100', {
+          method: 'GET',
+          credentials: 'include',
+        }),
+        fetch('/api/nginx/logs?type=error&lines=100', {
+          method: 'GET', 
+          credentials: 'include',
+        })
+      ]);
 
-    const handleErrorEvent = (event: LogEvent) => {
-      setErrorLogs((prevLogs) => {
-        const newLogs = [...prevLogs, event.payload];
-        // Keep only the last MAX_LOG_LINES entries
-        return newLogs.slice(-MAX_LOG_LINES);
-      });
-    };
+      if (accessResponse.ok) {
+        const accessData = await accessResponse.json();
+        setAccessLogs(accessData.logs || []);
+      }
 
-    const unlistenAccess = listen("access_event", handleAccessEvent);
-    const unlistenError = listen("error_event", handleErrorEvent);
-
-    return () => {
-      unlistenAccess.then((unlistenFn) => unlistenFn());
-      unlistenError.then((unlistenFn) => unlistenFn());
-    };
+      if (errorResponse.ok) {
+        const errorData = await errorResponse.json();
+        setErrorLogs(errorData.logs || []);
+      }
+    } catch (error) {
+      console.error("Error fetching logs:", error);
+    }
   }, []);
+
+  useEffect(() => {
+    if (isTauri && listen) {
+      // Use Tauri events in desktop mode
+      const handleAccessEvent = (event: LogEvent) => {
+        setAccessLogs((prevLogs) => {
+          const newLogs = [...prevLogs, event.payload];
+          return newLogs.slice(-MAX_LOG_LINES);
+        });
+      };
+
+      const handleErrorEvent = (event: LogEvent) => {
+        setErrorLogs((prevLogs) => {
+          const newLogs = [...prevLogs, event.payload];
+          return newLogs.slice(-MAX_LOG_LINES);
+        });
+      };
+
+      const unlistenAccess = listen("access_event", handleAccessEvent);
+      const unlistenError = listen("error_event", handleErrorEvent);
+
+      return () => {
+        unlistenAccess.then((unlistenFn) => unlistenFn());
+        unlistenError.then((unlistenFn) => unlistenFn());
+      };
+    } else {
+      // Use HTTP API in browser mode
+      fetchLogs();
+      
+      // Poll for new logs every 10 seconds
+      const interval = setInterval(fetchLogs, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [fetchLogs]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
@@ -255,6 +295,17 @@ const Logs = memo(() => {
             )}
             {rawMode ? "Formatted" : "Raw"} Mode
           </Button>
+
+          {!isTauri && (
+            <Button
+              variant="outline"
+              onClick={fetchLogs}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Refresh
+            </Button>
+          )}
 
           <Button
             variant="outline"

@@ -9,6 +9,14 @@ default-run = "rustinx"
 edition = "2021"
 rust-version = "1.76"
 
+[[bin]]
+name = "rustinx"
+path = "src/main.rs"
+
+[[bin]]
+name = "web-server"
+path = "src/bin/web-server.rs"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
@@ -20,6 +28,7 @@ serde = { version = "1.0", features = ["derive"] }
 tauri = { version = "1.6.1", features = ["api-all", "dialog", "system-tray"] }
 tokio = { version = "1.0", features = ["full"] }
 log = "^0.4"
+env_logger = "0.10"
 tauri-plugin-log = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
 tauri-sys = { git = "https://github.com/JonasKruckenberg/tauri-sys" }
 tauri-plugin-single-instance = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
