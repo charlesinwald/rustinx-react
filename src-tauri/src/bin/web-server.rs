@@ -320,6 +320,35 @@ async fn get_nginx_config_path_http() -> Result<HttpResponse, Error> {
     }
 }
 
+async fn get_nginx_version_http() -> Result<HttpResponse, Error> {
+    let output = Command::new("nginx")
+        .arg("-V")
+        .output()
+        .map_err(|e| format!("Failed to execute nginx -V: {}", e));
+
+    match output {
+        Ok(output) => {
+            // nginx -V outputs to stderr, not stdout
+            let version_info = if !output.stderr.is_empty() {
+                String::from_utf8_lossy(&output.stderr).to_string()
+            } else {
+                String::from_utf8_lossy(&output.stdout).to_string()
+            };
+
+            Ok(HttpResponse::Ok().json(serde_json::json!({
+                "version_info": version_info,
+                "success": true
+            })))
+        }
+        Err(e) => {
+            Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": e,
+                "success": false
+            })))
+        }
+    }
+}
+
 async fn get_nginx_logs_http(query: web::Query<std::collections::HashMap<String, String>>) -> Result<HttpResponse, Error> {
     let log_type = query.get("type").unwrap_or(&"access".to_string()).clone();
     let lines = query.get("lines").unwrap_or(&"100".to_string()).parse::<usize>().unwrap_or(100);
@@ -436,6 +465,7 @@ async fn main() -> std::io::Result<()> {
                     .route("/nginx/restart", web::post().to(restart_nginx_http))
                     .route("/nginx/status", web::get().to(get_nginx_status_http))
                     .route("/nginx/config-path", web::get().to(get_nginx_config_path_http))
+                    .route("/nginx/version", web::get().to(get_nginx_version_http))
                     .route("/nginx/logs", web::get().to(get_nginx_logs_http)),
             )
             .service(fs::Files::new("/", dist_str.clone()).index_file("index.html"))

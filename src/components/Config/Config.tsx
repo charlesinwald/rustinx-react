@@ -1,6 +1,9 @@
 import type React from "react";
 import { useState, useEffect, useMemo } from "react";
-import { invoke } from "@tauri-apps/api/tauri";
+
+// Check if we're running in Tauri environment
+const isTauri = typeof window !== 'undefined' && (window as any).__TAURI__;
+const invoke = isTauri ? require("@tauri-apps/api/tauri").invoke : null;
 import {
   Card,
   CardContent,
@@ -80,7 +83,30 @@ const Config: React.FC = () => {
   const fetchNginxConfig = async () => {
     setIsLoading(true);
     try {
-      const output = await invoke<string>("get_nginx_version");
+      let output: string;
+
+      if (isTauri && invoke) {
+        // Use Tauri invoke in desktop mode
+        output = await invoke<string>("get_nginx_version");
+      } else {
+        // Use HTTP API in browser mode
+        const response = await fetch('/api/nginx/version', {
+          method: 'GET',
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            output = data.version_info;
+          } else {
+            throw new Error(data.error);
+          }
+        } else {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+      }
+
       const parsedConfig = parseNginxConfig(output);
       setNginxConfig(parsedConfig);
 
@@ -97,7 +123,7 @@ const Config: React.FC = () => {
       console.error("Error fetching NGINX config:", error);
       toast({
         title: "Error",
-        description: "Failed to fetch NGINX configuration",
+        description: `Failed to fetch NGINX configuration: ${error}`,
         variant: "destructive",
       });
     } finally {
@@ -209,6 +235,15 @@ const Config: React.FC = () => {
   };
 
   const handleSaveChanges = async () => {
+    if (!isTauri || !invoke) {
+      toast({
+        title: "Feature Not Available",
+        description: "Configuration modification is only available in desktop mode for security reasons.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSaving(true);
     try {
       const updatedArgs = editArgs.map((arg) => arg.current).join(" ");
@@ -324,12 +359,20 @@ const Config: React.FC = () => {
               View and modify your NGINX build configuration
             </p>
           </div>
-          {hasUnsavedChanges && (
-            <Badge variant="secondary" className="gap-1">
-              <Edit3 className="h-3 w-3" />
-              {modifiedCount} unsaved changes
-            </Badge>
-          )}
+          <div className="flex gap-2">
+            {!isTauri && (
+              <Badge variant="outline" className="gap-1">
+                <Shield className="h-3 w-3" />
+                Read-Only Mode
+              </Badge>
+            )}
+            {hasUnsavedChanges && (
+              <Badge variant="secondary" className="gap-1">
+                <Edit3 className="h-3 w-3" />
+                {modifiedCount} unsaved changes
+              </Badge>
+            )}
+          </div>
         </div>
 
         <Tabs defaultValue="overview" className="space-y-4">
@@ -578,9 +621,10 @@ const Config: React.FC = () => {
                                         e.target.value
                                       )
                                     }
+                                    disabled={!isTauri}
                                     className={`font-mono text-sm ${
                                       arg.isModified ? "border-orange-300" : ""
-                                    }`}
+                                    } ${!isTauri ? "bg-muted" : ""}`}
                                   />
                                   {arg.isModified && (
                                     <Badge
