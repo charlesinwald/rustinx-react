@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, memo, useCallback } from "react";
+import apiClient from "../../api/axiosInstance";
 
 // Check if we're running in Tauri environment
 const isTauri = typeof window !== 'undefined' && (window as any).__TAURI__;
@@ -29,6 +30,8 @@ const MAX_LOG_LINES = 1000; // Maximum number of log lines to keep in memory
 const Logs = memo(() => {
   const [accessLogs, setAccessLogs] = useState<string[]>([]);
   const [errorLogs, setErrorLogs] = useState<string[]>([]);
+  const [accessError, setAccessError] = useState<string | null>(null);
+  const [errorError, setErrorError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [rawMode, setRawMode] = useState(false);
   const { toast } = useToast();
@@ -37,27 +40,35 @@ const Logs = memo(() => {
     try {
       // Fetch both access and error logs
       const [accessResponse, errorResponse] = await Promise.all([
-        fetch('/api/nginx/logs?type=access&lines=100', {
-          method: 'GET',
-          credentials: 'include',
-        }),
-        fetch('/api/nginx/logs?type=error&lines=100', {
-          method: 'GET', 
-          credentials: 'include',
-        })
+        apiClient.get('/nginx/logs?type=access&lines=100'),
+        apiClient.get('/nginx/logs?type=error&lines=100')
       ]);
 
-      if (accessResponse.ok) {
-        const accessData = await accessResponse.json();
+      // Handle access logs response
+      if (accessResponse.status === 200) {
+        const accessData = accessResponse.data;
         setAccessLogs(accessData.logs || []);
+        setAccessError(null); // Clear any previous errors
+      } else {
+        const accessErrorData = accessResponse.data || {};
+        setAccessError(accessErrorData.error || 'Failed to fetch access logs');
+        setAccessLogs([]);
       }
 
-      if (errorResponse.ok) {
-        const errorData = await errorResponse.json();
+      // Handle error logs response
+      if (errorResponse.status === 200) {
+        const errorData = errorResponse.data;
         setErrorLogs(errorData.logs || []);
+        setErrorError(null); // Clear any previous errors
+      } else {
+        const errorErrorData = errorResponse.data || {};
+        setErrorError(errorErrorData.error || 'Failed to fetch error logs');
+        setErrorLogs([]);
       }
     } catch (error) {
       console.error("Error fetching logs:", error);
+      setAccessError("Network error: Failed to connect to server");
+      setErrorError("Network error: Failed to connect to server");
     }
   }, []);
 
@@ -215,7 +226,7 @@ const Logs = memo(() => {
     });
   };
 
-  const renderLogs = (logs: string[], title: string, icon: React.ReactNode) => {
+  const renderLogs = (logs: string[], title: string, icon: React.ReactNode, errorMessage?: string | null) => {
     return (
       <Card>
         <CardHeader>
@@ -230,7 +241,19 @@ const Logs = memo(() => {
         <CardContent>
           <ScrollArea className="h-[500px] w-full">
             <div className="space-y-2">
-              {logs.length === 0 ? (
+              {errorMessage ? (
+                <div className="flex items-center justify-center h-32 text-center">
+                  <div className="space-y-3 max-w-md">
+                    <AlertTriangle className="h-8 w-8 text-amber-500 mx-auto" />
+                    <div className="space-y-2">
+                      <p className="font-medium text-foreground">Logging Configuration Issue</p>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                        {errorMessage}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : logs.length === 0 ? (
                 <div className="flex items-center justify-center h-32 text-center">
                   <div className="space-y-2">
                     <Activity className="h-8 w-8 text-muted-foreground mx-auto" />
@@ -326,14 +349,16 @@ const Logs = memo(() => {
         {renderLogs(
           filteredAccessLogs,
           "Access Logs",
-          <Activity className="h-5 w-5 text-blue-500" />
+          <Activity className="h-5 w-5 text-blue-500" />,
+          accessError
         )}
 
         {/* Error Events */}
         {renderLogs(
           filteredErrorLogs,
           "Error Logs",
-          <AlertTriangle className="h-5 w-5 text-red-500" />
+          <AlertTriangle className="h-5 w-5 text-red-500" />,
+          errorError
         )}
       </div>
     </div>

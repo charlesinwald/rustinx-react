@@ -1,49 +1,46 @@
 import React, { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 
-interface LoginProps {
-    onLoginSuccess?: () => void;
-}
-
-const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
+const Login: React.FC = () => {
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const { login } = useAuth();
 
     const handleLogin = async () => {
+        console.log('🔐 Login button clicked');
+        
         if (!password.trim()) {
+            console.log('❌ Empty password provided');
             setError('Please enter your sudo password');
             return;
         }
 
+        console.log('📝 Password length:', password.length);
         setIsLoading(true);
         setError('');
 
         try {
-            const response = await fetch('/api/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ password }),
-            });
-
-            if (response.ok) {
-                if (onLoginSuccess) {
-                    onLoginSuccess();
-                } else {
-                    window.location.reload();
-                }
-            } else {
+            console.log('🚀 Calling login function...');
+            const success = await login(password);
+            console.log('🔍 Login result:', success);
+            
+            if (!success) {
+                console.log('❌ Login failed');
                 setError('Invalid sudo password. Please try again.');
+            } else {
+                console.log('✅ Login successful');
             }
         } catch (err) {
+            console.error('💥 Login exception:', err);
             setError('Login failed. Please check your connection and try again.');
         } finally {
+            console.log('🏁 Login process finished');
             setIsLoading(false);
         }
     };
 
-    const handleKeyPress = (e: React.KeyboardEvent) => {
+    const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') {
             handleLogin();
         }
@@ -74,7 +71,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                             placeholder="Sudo password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            onKeyPress={handleKeyPress}
+                            onKeyDown={handleKeyDown}
                             disabled={isLoading}
                         />
                     </div>

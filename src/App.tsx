@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Logs from "./components/Logs/Logs";
 import ControlPanel from "./components/ControlPanel";
 import NginxStatus from "./components/Status/Status";
@@ -9,32 +9,13 @@ const isTauri = typeof window !== 'undefined' && (window as any).__TAURI__;
 const invoke = isTauri ? require("@tauri-apps/api/tauri").invoke : null;
 import Systemd from "./components/Systemd/Systemd";
 import Login from "./components/Login";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
-function App() {
+const AppContent: React.FC = () => {
   const [currentView, setCurrentView] = useState("logs");
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const { isAuthenticated, isLoading } = useAuth();
 
-  const checkAuthentication = async () => {
-    try {
-      const response = await fetch("/api/authenticated");
-      setIsAuthenticated(response.ok);
-    } catch {
-      setIsAuthenticated(false);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    checkAuthentication();
-  }, []);
-
-  const handleLoginSuccess = () => {
-    setIsAuthenticated(true);
-  };
-
-  const handleLinkClick = (link) => {
+  const handleLinkClick = (link: { view: string }) => {
     setCurrentView(link.view);
   };
 
@@ -54,7 +35,7 @@ function App() {
   }
 
   if (!isAuthenticated) {
-    return <Login onLoginSuccess={handleLoginSuccess} />;
+    return <Login />;
   }
 
   return (
@@ -67,6 +48,14 @@ function App() {
         {currentView === "systemdLogs" && <Systemd />}
       </div>
     </div>
+  );
+};
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 

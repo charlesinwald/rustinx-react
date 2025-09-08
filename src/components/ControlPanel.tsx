@@ -1,4 +1,5 @@
 import React, { useState } from "react"
+import apiClient from "../api/axiosInstance"
 
 // Check if we're running in Tauri environment
 const isTauri = typeof window !== 'undefined' && (window as any).__TAURI__;
@@ -66,11 +67,8 @@ export default function ControlPanel() {
         showSuccess(response)
       } else {
         // Use HTTP API in browser mode
-        const response = await fetch('/api/nginx/start', {
-          method: 'POST',
-          credentials: 'include',
-        })
-        const data = await response.json()
+        const response = await apiClient.post('/nginx/start')
+        const data = response.data
         
         if (data.success) {
           setLastResponse(data.message)
@@ -99,11 +97,8 @@ export default function ControlPanel() {
         showSuccess(response)
       } else {
         // Use HTTP API in browser mode
-        const response = await fetch('/api/nginx/restart', {
-          method: 'POST',
-          credentials: 'include',
-        })
-        const data = await response.json()
+        const response = await apiClient.post('/nginx/restart')
+        const data = response.data
         
         if (data.success) {
           setLastResponse(data.message)
@@ -132,11 +127,8 @@ export default function ControlPanel() {
         showSuccess(response)
       } else {
         // Use HTTP API in browser mode
-        const response = await fetch('/api/nginx/stop', {
-          method: 'POST',
-          credentials: 'include',
-        })
-        const data = await response.json()
+        const response = await apiClient.post('/nginx/stop')
+        const data = response.data
         
         if (data.success) {
           setLastResponse(data.message)

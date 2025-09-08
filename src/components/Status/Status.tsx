@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import apiClient from "../../api/axiosInstance";
 
 // Check if we're running in Tauri environment
 const isTauri = typeof window !== 'undefined' && (window as any).__TAURI__;
@@ -48,11 +49,8 @@ export default function NginxStatus() {
       } else {
         // Use HTTP API in browser mode
         try {
-          const response = await fetch('/api/nginx/status', {
-            method: 'GET',
-            credentials: 'include',
-          });
-          const data = await response.json();
+          const response = await apiClient.get('/nginx/status');
+          const data = response.data;
           setNginxStatus(data.status);
           setIsLoading(false);
         } catch (error) {
@@ -121,11 +119,8 @@ export default function NginxStatus() {
         setNginxConfigPath(confPath);
       } else {
         // Use HTTP API in browser mode
-        const response = await fetch('/api/nginx/config-path', {
-          method: 'GET',
-          credentials: 'include',
-        });
-        const data = await response.json();
+        const response = await apiClient.get('/nginx/config-path');
+        const data = response.data;
         setNginxConfigPath(data.path);
       }
     } catch (error) {

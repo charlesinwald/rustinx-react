@@ -1,5 +1,6 @@
 import React, { useState, useEffect, memo } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
+import apiClient from "../../api/axiosInstance";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Separator } from "../ui/separator";
@@ -32,13 +33,10 @@ const SystemMetrics: React.FC = memo(() => {
           setRxBytes(rxBytes);
         } else {
           // Running in browser mode - use HTTP API
-          const response = await fetch('/api/system-metrics', {
-            method: 'GET',
-            credentials: 'include', // Include session cookies
-          });
+          const response = await apiClient.get('/system-metrics');
           
-          if (response.ok) {
-            const data = await response.json();
+          if (response.status === 200) {
+            const data = response.data;
             setCpuUsage(data.cpu);
             setTotalMemory(data.totalMemory);
             setUsedMemory(data.usedMemory);

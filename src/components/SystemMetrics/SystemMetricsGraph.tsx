@@ -1,5 +1,6 @@
 import type React from "react";
 import { useState, useEffect, useCallback, useMemo, memo } from "react";
+import apiClient from "../../api/axiosInstance";
 import { Line } from "react-chartjs-2";
 import {
   Chart,
@@ -119,13 +120,10 @@ const SystemMetricsGraph: React.FC = memo(() => {
           );
       } else {
         // Running in browser mode - use HTTP API
-        const response = await fetch('/api/system-metrics', {
-          method: 'GET',
-          credentials: 'include',
-        });
+        const response = await apiClient.get('/system-metrics');
         
-        if (response.ok) {
-          const data = await response.json();
+        if (response.status === 200) {
+          const data = response.data;
           cpu = data.cpu;
           totalMemory = data.totalMemory;
           usedMemory = data.usedMemory;

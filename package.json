@@ -25,6 +25,7 @@
 	"devDependencies": {
 		"@tauri-apps/cli": "^1.1.1",
 		"autoprefixer": "^10.4.21",
+		"buffer": "^5.5.0||^6.0.0",
 		"parcel": "^2.7.0",
 		"postcss": "^8.5.6",
 		"process": "^0.11.10",
@@ -46,6 +47,7 @@
 		"@tauri-apps/plugin-log": "git+https://github.com/tauri-apps/tauri-plugin-log.git#v2",
 		"@types/react": "^18.0.21",
 		"@types/react-dom": "^18.0.6",
+		"axios": "^1.11.0",
 		"chart.js": "^4.4.3",
 		"chartjs-plugin-zoom": "^2.0.1",
 		"class-variance-authority": "^0.7.1",

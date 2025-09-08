@@ -1,6 +1,10 @@
 import type React from "react";
 import { useState, useEffect, useMemo, useCallback, memo } from "react";
-import { invoke } from "@tauri-apps/api/tauri";
+import apiClient from "../../api/axiosInstance";
+
+// Check if we're running in Tauri environment
+const isTauri = typeof window !== 'undefined' && (window as any).__TAURI__;
+const invoke = isTauri ? require("@tauri-apps/api/tauri").invoke : null;
 import {
   Card,
   CardContent,
@@ -152,16 +156,38 @@ const Systemd: React.FC = memo(() => {
     setError("");
 
     try {
-      const output = await invoke<string>("get_systemd_logs", {
-        options: {
+      let output: string;
+
+      if (isTauri && invoke) {
+        // Use Tauri in desktop mode
+        output = await invoke<string>("get_systemd_logs", {
+          options: {
+            service_name: serviceName,
+            no_pager: noPager,
+            num_lines: numLines,
+            since: since || null,
+            until: until || null,
+            reverse: reverse,
+          } as SystemdOptions,
+        });
+      } else {
+        // Use HTTP API in browser mode
+        const response = await apiClient.post('/systemd/logs', {
           service_name: serviceName,
           no_pager: noPager,
           num_lines: numLines,
           since: since || null,
           until: until || null,
           reverse: reverse,
-        } as SystemdOptions,
-      });
+        });
+
+        if (response.status !== 200) {
+          throw new Error(response.data?.error || 'Failed to fetch systemd logs');
+        }
+
+        const data = response.data;
+        output = data.logs;
+      }
 
       const parsedLogs = output
         .split("\n")
@@ -177,7 +203,7 @@ const Systemd: React.FC = memo(() => {
     } catch (err) {
       console.error("Failed to fetch systemd logs:", err);
       const errorMessage =
-        typeof err === "string" ? err : "Error fetching logs.";
+        typeof err === "string" ? err : err instanceof Error ? err.message : "Error fetching logs.";
       setError(errorMessage);
       setLogs([]);
       toast({
@@ -269,12 +295,7 @@ const Systemd: React.FC = memo(() => {
     fetchLogs();
   }, [serviceName, numLines, noPager, since, until, reverse]);
 
-  const formatDateTime = (datetime: string) => {
-    return datetime ? datetime.replace("T", " ") : "";
-  };
-
-  const isLinux =
-    typeof process !== "undefined" && process.platform === "linux";
+  const isLinux = isTauri || typeof window !== "undefined";
 
   return (
     <TooltipProvider>

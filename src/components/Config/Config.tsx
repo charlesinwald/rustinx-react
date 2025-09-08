@@ -1,5 +1,6 @@
 import type React from "react";
 import { useState, useEffect, useMemo } from "react";
+import apiClient from "../../api/axiosInstance";
 
 // Check if we're running in Tauri environment
 const isTauri = typeof window !== 'undefined' && (window as any).__TAURI__;
@@ -90,13 +91,10 @@ const Config: React.FC = () => {
         output = await invoke<string>("get_nginx_version");
       } else {
         // Use HTTP API in browser mode
-        const response = await fetch('/api/nginx/version', {
-          method: 'GET',
-          credentials: 'include',
-        });
+        const response = await apiClient.get('/nginx/version');
 
-        if (response.ok) {
-          const data = await response.json();
+        if (response.status === 200) {
+          const data = response.data;
           if (data.success) {
             output = data.version_info;
           } else {
