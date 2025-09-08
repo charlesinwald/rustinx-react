@@ -809,7 +809,7 @@ async fn main() -> std::io::Result<()> {
     
     let dist_path = project_root.join("dist");
     
-    println!("Starting Rustinx web server on http://0.0.0.0:8080");
+    println!("Starting Rustinx web server on http://0.0.0.0:8081");
     println!("Project root: {}", project_root.display());
     println!("Serving static files from: {}", dist_path.display());
     
@@ -857,7 +857,7 @@ async fn main() -> std::io::Result<()> {
             )
             .service(fs::Files::new("/", dist_str.clone()).index_file("index.html"))
     })
-    .bind("0.0.0.0:8080")?
+    .bind("0.0.0.0:8081")?
     .run()
     .await
 }

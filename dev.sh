@@ -10,7 +10,7 @@ cleanup_ports() {
     pkill -f "web-server" 2>/dev/null || true
     sudo lsof -ti:1234 | xargs sudo kill -9 2>/dev/null || true
     sudo lsof -ti:3000 | xargs sudo kill -9 2>/dev/null || true
-    sudo lsof -ti:8080 | xargs sudo kill -9 2>/dev/null || true
+    sudo lsof -ti:8081 | xargs sudo kill -9 2>/dev/null || true
 }
 
 # Cleanup on exit
@@ -79,7 +79,7 @@ case $choice in
     fi
     
     echo "Web server started with PID: $WEB_SERVER_PID"
-    echo "Frontend is built and served at http://localhost:8080"
+    echo "Frontend is built and served at http://localhost:8081"
     echo "Press Ctrl+C to stop the server"
     
     # Wait for interrupt signal instead of starting dev server

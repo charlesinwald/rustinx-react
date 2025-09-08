@@ -10,7 +10,11 @@
       "Bash(cargo:*)",
       "Read(//home/charles/Code/**)",
       "Bash(npm run dev:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(yarn run build)",
+      "Bash(chmod:*)",
+      "Bash(./deploy-to-vps.sh)",
+      "Bash(/home/charles/Code/rustinx-react/deploy-to-vps.sh:*)"
     ],
     "deny": [],
     "ask": []

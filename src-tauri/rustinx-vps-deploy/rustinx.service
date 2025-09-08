@@ -1,0 +1,16 @@
+[Unit]
+Description=Rustinx Nginx Dashboard
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/rustinx
+ExecStart=/opt/rustinx/web-server
+Environment=RUST_LOG=debug
+Environment=RUST_BACKTRACE=1
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

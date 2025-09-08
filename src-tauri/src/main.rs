@@ -32,7 +32,7 @@ async fn main() {
                 )
                 .service(fs::Files::new("/", "../dist").index_file("index.html"))
         })
-        .bind("0.0.0.0:8080")
+        .bind("0.0.0.0:8081")
         .expect("Failed to bind to address")
         .run()
         .await
