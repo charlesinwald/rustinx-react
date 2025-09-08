@@ -4,8 +4,12 @@ class ApiClient {
   private axiosInstance: AxiosInstance;
 
   constructor() {
+    // In development, point to the web-server port, otherwise use relative path
+    const isDevelopment = window.location.port === '1234';
+    const baseURL = isDevelopment ? 'http://localhost:8080/api' : '/api';
+    
     this.axiosInstance = axios.create({
-      baseURL: '/api',
+      baseURL,
       headers: {
         'Content-Type': 'application/json',
       },

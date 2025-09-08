@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, memo, useCallback } from "react";
 import apiClient from "../../api/axiosInstance";
 
 // Check if we're running in Tauri environment
-const isTauri = typeof window !== 'undefined' && (window as any).__TAURI__;
+const isTauri = typeof window !== "undefined" && (window as any).__TAURI__;
 const listen = isTauri ? require("@tauri-apps/api/event").listen : null;
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { ScrollArea } from "../ui/scroll-area";
@@ -37,39 +37,80 @@ const Logs = memo(() => {
   const { toast } = useToast();
 
   const fetchLogs = useCallback(async () => {
-    try {
-      // Fetch both access and error logs
-      const [accessResponse, errorResponse] = await Promise.all([
-        apiClient.get('/nginx/logs?type=access&lines=100'),
-        apiClient.get('/nginx/logs?type=error&lines=100')
-      ]);
+    console.log("📋 Starting to fetch logs...");
 
-      // Handle access logs response
-      if (accessResponse.status === 200) {
-        const accessData = accessResponse.data;
-        setAccessLogs(accessData.logs || []);
-        setAccessError(null); // Clear any previous errors
-      } else {
-        const accessErrorData = accessResponse.data || {};
-        setAccessError(accessErrorData.error || 'Failed to fetch access logs');
+    // Fetch access and error logs independently to avoid cross-contamination
+    console.log("🌐 Making parallel requests for access and error logs");
+
+    // Handle access logs
+    const fetchAccessLogs = async () => {
+      try {
+        const accessResponse = await apiClient.get(
+          "/nginx/logs?type=access&lines=100"
+        );
+        console.log("📊 Access response status:", accessResponse.status);
+        console.log("📊 Access response data:", accessResponse.data);
+
+        if (accessResponse.status === 200) {
+          const accessData = accessResponse.data;
+          console.log("✅ Access logs data:", accessData);
+          console.log("📝 Access logs count:", accessData.logs?.length || 0);
+          setAccessLogs(accessData.logs || []);
+          setAccessError(null); // Clear any previous errors
+          console.log("✅ Access logs state updated");
+        } else {
+          console.log("❌ Access response failed:", accessResponse.status);
+          const accessErrorData = accessResponse.data || {};
+          setAccessError(
+            accessErrorData.error || "Failed to fetch access logs"
+          );
+          setAccessLogs([]);
+        }
+      } catch (error: any) {
+        console.error("❌ Error fetching access logs:", error);
+        const errorMessage =
+          error.response?.data?.error ||
+          "Network error: Failed to connect to server";
+        setAccessError(errorMessage);
         setAccessLogs([]);
       }
+    };
 
-      // Handle error logs response
-      if (errorResponse.status === 200) {
-        const errorData = errorResponse.data;
-        setErrorLogs(errorData.logs || []);
-        setErrorError(null); // Clear any previous errors
-      } else {
-        const errorErrorData = errorResponse.data || {};
-        setErrorError(errorErrorData.error || 'Failed to fetch error logs');
+    // Handle error logs
+    const fetchErrorLogs = async () => {
+      try {
+        const errorResponse = await apiClient.get(
+          "/nginx/logs?type=error&lines=100"
+        );
+        console.log("📊 Error response status:", errorResponse.status);
+        console.log("📊 Error response data:", errorResponse.data);
+
+        if (errorResponse.status === 200) {
+          const errorData = errorResponse.data;
+          console.log("✅ Error logs data:", errorData);
+          console.log("📝 Error logs count:", errorData.logs?.length || 0);
+          setErrorLogs(errorData.logs || []);
+          setErrorError(null); // Clear any previous errors
+          console.log("✅ Error logs state updated");
+        } else {
+          console.log("❌ Error response failed:", errorResponse.status);
+          const errorErrorData = errorResponse.data || {};
+          setErrorError(errorErrorData.error || "Failed to fetch error logs");
+          setErrorLogs([]);
+        }
+      } catch (error: any) {
+        console.error("❌ Error fetching error logs:", error);
+        const errorMessage =
+          error.response?.data?.error ||
+          "Network error: Failed to connect to server";
+        setErrorError(errorMessage);
         setErrorLogs([]);
       }
-    } catch (error) {
-      console.error("Error fetching logs:", error);
-      setAccessError("Network error: Failed to connect to server");
-      setErrorError("Network error: Failed to connect to server");
-    }
+    };
+
+    // Run both requests in parallel but handle errors independently
+    await Promise.allSettled([fetchAccessLogs(), fetchErrorLogs()]);
+    console.log("✅ Log fetch operations completed");
   }, []);
 
   useEffect(() => {
@@ -93,13 +134,13 @@ const Logs = memo(() => {
       const unlistenError = listen("error_event", handleErrorEvent);
 
       return () => {
-        unlistenAccess.then((unlistenFn) => unlistenFn());
-        unlistenError.then((unlistenFn) => unlistenFn());
+        unlistenAccess.then((unlistenFn: any) => unlistenFn());
+        unlistenError.then((unlistenFn: any) => unlistenFn());
       };
     } else {
       // Use HTTP API in browser mode
       fetchLogs();
-      
+
       // Poll for new logs every 10 seconds
       const interval = setInterval(fetchLogs, 10000);
       return () => clearInterval(interval);
@@ -226,7 +267,18 @@ const Logs = memo(() => {
     });
   };
 
-  const renderLogs = (logs: string[], title: string, icon: React.ReactNode, errorMessage?: string | null) => {
+  const renderLogs = (
+    logs: string[],
+    title: string,
+    icon: React.ReactNode,
+    errorMessage?: string | null
+  ) => {
+    console.log(`🔍 Rendering ${title}:`, {
+      logsCount: logs.length,
+      errorMessage,
+      sampleLogs: logs.slice(0, 2),
+    });
+
     return (
       <Card>
         <CardHeader>
@@ -243,11 +295,13 @@ const Logs = memo(() => {
             <div className="space-y-2">
               {errorMessage ? (
                 <div className="flex items-center justify-center h-32 text-center">
-                  <div className="space-y-3 max-w-md">
-                    <AlertTriangle className="h-8 w-8 text-amber-500 mx-auto" />
-                    <div className="space-y-2">
-                      <p className="font-medium text-foreground">Logging Configuration Issue</p>
-                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                  <div className="space-y-3 max-w-md text-center flex">
+                    <div className="space-y-2 text-center flex flex-1 flex-col items-center">
+                      <AlertTriangle className="h-8 w-8 text-amber-500 mx-auto" />
+                      <p className="font-medium text-foreground">
+                        Logging Configuration Issue
+                      </p>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap text-center">
                         {errorMessage}
                       </p>
                     </div>

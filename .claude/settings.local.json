@@ -7,7 +7,10 @@
       "Bash(yarn add axios)",
       "Bash(yarn build)",
       "mcp__ide__getDiagnostics",
-      "Bash(cargo:*)"
+      "Bash(cargo:*)",
+      "Read(//home/charles/Code/**)",
+      "Bash(npm run dev:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []
