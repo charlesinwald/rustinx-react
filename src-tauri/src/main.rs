@@ -1,5 +1,6 @@
 use actix_session::{storage::CookieSessionStore, SessionMiddleware};
 use actix_web::{cookie::Key, web, App, HttpServer};
+use actix_cors::Cors;
 use tauri::{CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu};
 use actix_files as fs;
 
@@ -20,7 +21,21 @@ async fn main() {
     // Start the Actix Web server in a separate async task
     let actix_server = tokio::spawn(async {
         HttpServer::new(move || {
+            // Configure CORS to allow requests from the frontend
+            let cors = Cors::default()
+                .allowed_origin("http://localhost:1234")
+                .allowed_origin("http://0.0.0.0:1234")
+                .allowed_methods(vec!["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+                .allowed_headers(vec![
+                    actix_web::http::header::AUTHORIZATION,
+                    actix_web::http::header::ACCEPT,
+                    actix_web::http::header::CONTENT_TYPE,
+                ])
+                .supports_credentials()
+                .max_age(3600);
+
             App::new()
+                .wrap(cors)
                 .wrap(SessionMiddleware::new(
                     CookieSessionStore::default(),
                     Key::from(&[0; 64]),
