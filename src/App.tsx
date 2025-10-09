@@ -1,0 +1,62 @@
+import React, { useState } from "react";
+import Logs from "./components/Logs/Logs";
+import ControlPanel from "./components/ControlPanel";
+import NginxStatus from "./components/Status/Status";
+import Sidebar from "./components/Sidebar/Sidebar";
+import Config from "./components/Config/Config";
+// Conditionally import Tauri APIs only when available
+const isTauri = typeof window !== 'undefined' && (window as any).__TAURI__;
+const invoke = isTauri ? require("@tauri-apps/api/tauri").invoke : null;
+import Systemd from "./components/Systemd/Systemd";
+import Login from "./components/Login";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+
+const AppContent: React.FC = () => {
+  const [currentView, setCurrentView] = useState("logs");
+  const { isAuthenticated, isLoading } = useAuth();
+
+  const handleLinkClick = (link: { view: string }) => {
+    setCurrentView(link.view);
+  };
+
+  const links = [
+    { label: "Access Logs", view: "logs" },
+    { label: "Control Panel", view: "controlPanel" },
+    { label: "Config Info", view: "configInfo" },
+    { label: "System Logs", view: "systemdLogs" },
+  ];
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Login />;
+  }
+
+  return (
+    <div className="flex h-screen">
+      <Sidebar links={links} onLinkClick={handleLinkClick} currentView={currentView} />
+      <div className="flex-1 overflow-y-auto p-6">
+        {currentView === "logs" && <Logs />}
+        {currentView === "controlPanel" && <ControlPanel />}
+        {currentView === "configInfo" && <Config />}
+        {currentView === "systemdLogs" && <Systemd />}
+      </div>
+    </div>
+  );
+};
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
+}
+
+export default App;

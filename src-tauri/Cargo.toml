@@ -1,0 +1,55 @@
+[package]
+name = "rustinx"
+version = "0.1.0"
+description = "A Tauri App"
+authors = ["you"]
+license = ""
+repository = ""
+default-run = "rustinx"
+edition = "2021"
+rust-version = "1.76"
+
+[[bin]]
+name = "rustinx"
+path = "src/main.rs"
+
+# Web server binary commented out - web server is embedded in main.rs for Tauri app
+# [[bin]]
+# name = "web-server"
+# path = "src/bin/web-server.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[build-dependencies]
+tauri-build = { version = "1.5.1", features = [] }
+
+[dependencies]
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+tauri = { version = "1.6.1", features = ["api-all", "dialog", "system-tray"] }
+tokio = { version = "1.0", features = ["full"] }
+log = "^0.4"
+env_logger = "0.10"
+tauri-plugin-log = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
+tauri-sys = { git = "https://github.com/JonasKruckenberg/tauri-sys" }
+tauri-plugin-single-instance = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
+sysinfo = "0.31.2"
+actix-web = "4.9.0"
+actix-session = { version = "0.8.0", features = ["cookie-session"] }
+actix-files = "0.6.5"
+actix-cors = "0.6"
+rand = "0.8"
+futures-util = "0.3.31"
+lazy_static = "1.4.0"
+[target.'cfg(unix)'.dependencies]
+nix = "0.28.0"
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.29", features = ["Win32_Foundation", "Win32_Security", "Win32_System"] }
+
+[features]
+# by default Tauri runs in production mode
+# when `tauri dev` runs it is executed with `cargo run --no-default-features` if `devPath` is an URL
+default = [ "custom-protocol" ]
+# this feature is used for production builds where `devPath` points to the filesystem
+# DO NOT remove this
+custom-protocol = [ "tauri/custom-protocol" ]

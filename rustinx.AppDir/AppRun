@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# AppImage launcher for Rustinx
+cd "$(dirname "$0")"
+
+# Set environment
+export RUST_LOG=info
+export RUST_BACKTRACE=1
+
+# Start the web server
+echo "Starting Rustinx Nginx Dashboard..."
+echo "Access at: http://localhost:8081"
+
+exec ./usr/bin/web-server

@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Rustinx
+Exec=rustinx-launcher
+Icon=rustinx
+Type=Application
+Categories=System;
+Comment=Nginx Dashboard and Monitoring Tool

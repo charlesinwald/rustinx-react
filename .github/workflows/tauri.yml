@@ -1,0 +1,83 @@
+name: Tauri Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  tauri-build:
+    runs-on: ${{ matrix.platform }}
+
+    strategy:
+      matrix:
+        platform: [ubuntu-latest, macos-latest]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16 # Specify your Node.js version here
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          profile: minimal
+
+      - name: Enable Ubuntu Repositories and Install Dependencies (Ubuntu)
+        if: matrix.platform == 'ubuntu-latest'
+        run: |
+          sudo add-apt-repository universe
+          sudo add-apt-repository multiverse
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgtk-3-dev \
+            build-essential \
+            curl \
+            libssl-dev \
+            libwebkit2gtk-4.0-dev \
+            pkg-config \
+            libappindicator3-dev  # Install the appindicator library
+
+      # - name: Install Dependencies (macOS)
+      #   if: matrix.platform == 'macos-latest'
+      #   run: |
+      #     brew install \
+      #       gtk+3 \
+      #       webkit2gtk \
+      #       libappindicator \
+      #       pkg-config \
+      #       curl \
+      #       openssl
+
+      - name: Install dependencies
+        run: yarn install # or npm install
+
+      - name: Cache Rust build
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Build Tauri app
+        run: yarn tauri build # or npm run tauri build
+
+      - name: List the contents of the bundle directory
+        run: ls -alh src-tauri/target/release/bundle/
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: tauri-app
+          path: src-tauri/target/release/bundle/
+          if-no-files-found: warn
