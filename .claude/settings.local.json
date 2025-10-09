@@ -16,7 +16,8 @@
       "Bash(./deploy-to-vps.sh)",
       "Bash(/home/charles/Code/rustinx-react/deploy-to-vps.sh:*)",
       "Bash(git checkout:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
