@@ -44,11 +44,16 @@ pub async fn login(session: Session, req: web::Json<LoginRequest>) -> Result<Htt
         if let Ok(mut store) = PASSWORD_STORE.lock() {
             store.insert("sudo_password".to_string(), req.password.clone());
         }
-        
+
         session.insert("logged_in", true)?;
-        Ok(HttpResponse::Ok().finish())
+        Ok(HttpResponse::Ok().json(serde_json::json!({
+            "success": true
+        })))
     } else {
-        Ok(HttpResponse::Unauthorized().finish())
+        Ok(HttpResponse::Unauthorized().json(serde_json::json!({
+            "success": false,
+            "error": "Invalid sudo password"
+        })))
     }
 }
 
