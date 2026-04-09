@@ -19,7 +19,7 @@ rustup target add x86_64-unknown-linux-musl
 
 # Build using the clean Cargo.toml without GUI dependencies
 export RUSTFLAGS="-C target-feature=+crt-static"
-cargo build --bin web-server --release --target x86_64-unknown-linux-musl --manifest-path ./Cargo-webserver.toml
+cargo build --bin web-server --release --target x86_64-unknown-linux-musl --manifest-path ./standalone-web-server/Cargo.toml
 
 cd ..
 
@@ -36,7 +36,7 @@ echo "🚀 Creating deployment packages..."
 # 1. Simple deployment package
 mkdir -p rustinx-clean-deploy
 cp $BINARY rustinx-clean-deploy/web-server
-cp -r dist rustinx-clean-deploy/
+# Frontend is embedded in web-server; no separate dist/ at runtime.
 cat > rustinx-clean-deploy/start.sh << 'EOF'
 #!/bin/bash
 export RUST_LOG=info
@@ -112,8 +112,7 @@ if [ -f "appimagetool-x86_64.AppImage" ]; then
     cp $BINARY $APPDIR/usr/bin/web-server
     chmod +x $APPDIR/usr/bin/web-server
 
-    # Copy frontend files
-    cp -r dist/* $APPDIR/usr/share/rustinx/
+    # Frontend is embedded in web-server; no separate dist tree in the AppImage.
 
     # Create desktop file
     cat > $APPDIR/rustinx.desktop << 'EOF'

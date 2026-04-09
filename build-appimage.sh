@@ -51,8 +51,7 @@ fi
 echo "📦 Building frontend..."
 yarn run build
 
-# Copy frontend files
-cp -r dist/* $APPDIR/usr/share/rustinx/
+# Frontend is embedded in web-server; no separate dist tree in the AppImage.
 
 # Create desktop file
 cat > $APPDIR/rustinx.desktop << EOF

@@ -1,0 +1,10 @@
+[package]
+name = "rustinx-embed"
+version = "0.1.0"
+edition = "2021"
+description = "Embedded frontend dist for Rustinx (shared by rustinx and web-server binaries)"
+
+[dependencies]
+actix-web = "4.9.0"
+mime_guess = "2.0"
+rust-embed = "8"

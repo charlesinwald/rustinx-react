@@ -1,8 +1,8 @@
 use actix_session::{storage::CookieSessionStore, SessionMiddleware};
-use actix_web::{cookie::Key, web, App, HttpServer};
+use actix_web::{cookie::Key, guard, web, App, HttpServer};
 use actix_cors::Cors;
 use tauri::{CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu};
-use actix_files as fs;
+use rustinx_embed::{default_security_headers, serve_embedded_dist};
 
 mod auth;
 mod actix_routes;
@@ -35,6 +35,7 @@ async fn main() {
                 .max_age(3600);
 
             App::new()
+                .wrap(default_security_headers())
                 .wrap(cors)
                 .wrap(SessionMiddleware::new(
                     CookieSessionStore::default(),
@@ -45,7 +46,11 @@ async fn main() {
                         .route("/login", web::post().to(auth::login))
                         .configure(actix_routes::configure),
                 )
-                .service(fs::Files::new("/", "../dist").index_file("index.html"))
+                .default_service(
+                    web::route()
+                        .guard(guard::Get())
+                        .to(serve_embedded_dist),
+                )
         })
         .bind("0.0.0.0:8081")
         .expect("Failed to bind to address")

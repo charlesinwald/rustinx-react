@@ -44,7 +44,7 @@ echo "🚀 Creating deployment packages..."
 # 1. Simple deployment package
 mkdir -p rustinx-final-deploy
 cp $BINARY rustinx-final-deploy/web-server
-cp -r dist rustinx-final-deploy/
+# Frontend is embedded in web-server; no separate dist/ at runtime.
 cat > rustinx-final-deploy/start.sh << 'EOF'
 #!/bin/bash
 export RUST_LOG=info

@@ -79,7 +79,7 @@ case $choice in
     fi
     
     echo "Web server started with PID: $WEB_SERVER_PID"
-    echo "Frontend is built and served at http://localhost:8081"
+    echo "Frontend is embedded in web-server; dashboard at http://localhost:8081"
     echo "Press Ctrl+C to stop the server"
     
     # Wait for interrupt signal instead of starting dev server

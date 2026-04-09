@@ -12,12 +12,9 @@
   },
   "tauri": {    
     "allowlist": {
-      "all": true,
-      "dialog": {
-        "confirm": true
-      },
-      "shell": {
-        "open": true
+      "all": false,
+      "window": {
+        "all": true
       }
     },
     "bundle": {
@@ -55,7 +52,7 @@
 
     },
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: tauri: asset: https://asset.localhost http://asset.localhost; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost https://ipc.localhost http://localhost:* http://127.0.0.1:* http://0.0.0.0:* ws://localhost:* ws://127.0.0.1:* ws://0.0.0.0:*; frame-ancestors 'none'"
     },
     "updater": {
       "active": false

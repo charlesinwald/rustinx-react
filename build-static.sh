@@ -44,7 +44,7 @@ cp $BINARY $APPDIR/usr/bin/web-server
 chmod +x $APPDIR/usr/bin/web-server
 
 # Copy frontend files
-cp -r dist/* $APPDIR/usr/share/rustinx/
+# Frontend is embedded in web-server; AppImage does not need a separate dist tree.
 
 # Create desktop file
 cat > $APPDIR/rustinx.desktop << EOF
@@ -98,7 +98,7 @@ fi
 echo "📦 Creating simple deployment package..."
 mkdir -p rustinx-static-deploy
 cp $BINARY rustinx-static-deploy/web-server
-cp -r dist rustinx-static-deploy/
+# Frontend is embedded in web-server; no separate dist/ at runtime.
 cat > rustinx-static-deploy/start.sh << 'EOF'
 #!/bin/bash
 export RUST_LOG=info

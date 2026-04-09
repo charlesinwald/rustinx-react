@@ -32,7 +32,7 @@ echo "🚀 Creating deployment packages..."
 # Simple deployment package
 mkdir -p rustinx-simple-deploy
 cp $BINARY rustinx-simple-deploy/web-server
-cp -r dist rustinx-simple-deploy/
+# Frontend is embedded in web-server; no separate dist/ at runtime.
 cat > rustinx-simple-deploy/start.sh << 'EOF'
 #!/bin/bash
 export RUST_LOG=info

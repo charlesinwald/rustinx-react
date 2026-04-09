@@ -30,7 +30,7 @@ echo "🚀 Creating final deployment package..."
 
 mkdir -p rustinx-final
 cp $BINARY rustinx-final/web-server
-cp -r dist rustinx-final/
+# Frontend is embedded in web-server; no separate dist/ at runtime.
 
 # Create startup script
 cat > rustinx-final/start.sh << 'EOF'

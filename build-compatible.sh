@@ -34,8 +34,7 @@ mkdir -p $APPDIR/usr/share/rustinx
 cp web-server-compatible $APPDIR/usr/bin/web-server
 chmod +x $APPDIR/usr/bin/web-server
 
-# Copy frontend files
-cp -r dist-compatible/* $APPDIR/usr/share/rustinx/
+# Frontend is embedded in web-server at build time; no separate dist in the AppImage.
 
 # Create desktop file
 cat > $APPDIR/rustinx.desktop << EOF

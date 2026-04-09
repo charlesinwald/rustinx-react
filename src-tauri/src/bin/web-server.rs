@@ -1,7 +1,7 @@
 use actix_session::{storage::CookieSessionStore, SessionMiddleware, Session};
-use actix_web::{cookie::Key, web, App, HttpServer, HttpResponse, Error};
+use actix_web::{cookie::Key, guard, web, App, HttpServer, HttpResponse, Error};
 use actix_cors::Cors;
-use actix_files as fs;
+use rustinx_embed::{default_security_headers, serve_embedded_dist};
 use serde_json;
 use sysinfo::System;
 use std::process::{Command, Stdio};
@@ -798,33 +798,15 @@ fn format_datetime_macos(datetime: &str) -> String {
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     env_logger::init();
-    
-    // Get the current executable path and navigate to the project root
-    let current_exe = std::env::current_exe().expect("Failed to get current executable path");
-    let project_root = current_exe.parent()
-        .and_then(|p| p.parent())      // target-web
-        .and_then(|p| p.parent())      // src-tauri
-        .and_then(|p| p.parent())      // project root
-        .expect("Failed to find project root");
-    
-    let dist_path = project_root.join("dist");
-    
+
     println!("Starting Rustinx web server on http://0.0.0.0:8081");
-    println!("Project root: {}", project_root.display());
-    println!("Serving static files from: {}", dist_path.display());
-    
-    if !dist_path.exists() {
-        eprintln!("ERROR: dist directory does not exist at {}", dist_path.display());
-        eprintln!("Please run 'yarn run build' first to create the dist directory.");
-        return Err(std::io::Error::new(std::io::ErrorKind::NotFound, "dist directory not found"));
-    }
-    
-    let dist_str = dist_path.to_string_lossy().to_string();
-    
+    println!("Serving embedded static UI (dist compiled into binary)");
+
     HttpServer::new(move || {
         println!("🌐 Creating new HTTP server instance");
         println!("🍪 Setting up CORS and session middleware");
         App::new()
+            .wrap(default_security_headers())
             .wrap(
                 Cors::default()
                     .allow_any_origin()
@@ -855,7 +837,11 @@ async fn main() -> std::io::Result<()> {
                     .route("/nginx/logs", web::get().to(get_nginx_logs_http))
                     .route("/systemd/logs", web::post().to(get_systemd_logs_http)),
             )
-            .service(fs::Files::new("/", dist_str.clone()).index_file("index.html"))
+            .default_service(
+                web::route()
+                    .guard(guard::Get())
+                    .to(serve_embedded_dist),
+            )
     })
     .bind("0.0.0.0:8081")?
     .run()

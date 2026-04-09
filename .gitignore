@@ -28,3 +28,5 @@ dist-ssr
 *.sln
 *.sw?
 src-tauri/target*
+src-tauri/standalone-web-server/target
+src-tauri/standalone-web-server/Cargo.lock

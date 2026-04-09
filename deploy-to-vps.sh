@@ -12,7 +12,7 @@ mkdir -p $DEPLOY_DIR
 
 # Copy the built frontend
 echo "Packaging frontend..."
-cp -r dist $DEPLOY_DIR/
+# Frontend is embedded in web-server; no separate dist/ at runtime.
 
 # Copy the built web server binary
 echo "Packaging web server binary..."

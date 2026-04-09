@@ -1,3 +1,7 @@
+# Headless `web-server` only (no Tauri). Used by swapping into place as `Cargo.toml`:
+#   mv Cargo.toml Cargo.toml.backup && cp Cargo-webserver.toml Cargo.toml
+# (Do not use --manifest-path with this filename; use standalone-web-server/Cargo.toml instead.)
+
 [package]
 name = "rustinx-web-server"
 version = "0.1.0"
@@ -13,6 +17,7 @@ name = "web-server"
 path = "src/bin/web-server.rs"
 
 [dependencies]
+rustinx-embed = { path = "crates/rustinx-embed" }
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 tokio = { version = "1.0", features = ["full"] }
@@ -21,7 +26,6 @@ env_logger = "0.10"
 sysinfo = "0.31.2"
 actix-web = "4.9.0"
 actix-session = { version = "0.8.0", features = ["cookie-session"] }
-actix-files = "0.6.5"
 actix-cors = "0.6"
 rand = "0.8"
 futures-util = "0.3.31"
