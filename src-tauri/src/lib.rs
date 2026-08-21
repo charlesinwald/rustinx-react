@@ -4,5 +4,6 @@ pub mod commands;
 pub mod config;
 pub mod events_service;
 pub mod logging;
+pub mod nginx_logs;
 pub mod systemd;
 pub mod util;

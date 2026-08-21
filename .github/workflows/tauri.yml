@@ -14,26 +14,23 @@ jobs:
 
     strategy:
       matrix:
-        platform: [ubuntu-latest, macos-latest]
+        # Ubuntu 22.04 still ships webkit2gtk 4.0, which Tauri 1.x needs.
+        platform: [ubuntu-22.04, macos-latest]
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 16 # Specify your Node.js version here
+          node-version: 20
 
       - name: Setup Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-          profile: minimal
+        uses: dtolnay/rust-toolchain@1.77.2
 
       - name: Enable Ubuntu Repositories and Install Dependencies (Ubuntu)
-        if: matrix.platform == 'ubuntu-latest'
+        if: startsWith(matrix.platform, 'ubuntu')
         run: |
           sudo add-apt-repository universe
           sudo add-apt-repository multiverse
@@ -58,11 +55,14 @@ jobs:
       #       curl \
       #       openssl
 
+      - name: Enable Corepack
+        run: corepack enable
+
       - name: Install dependencies
-        run: yarn install # or npm install
+        run: yarn install
 
       - name: Cache Rust build
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cargo
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
@@ -76,8 +76,8 @@ jobs:
         run: ls -alh src-tauri/target/release/bundle/
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: tauri-app
+          name: tauri-app-${{ matrix.platform }}
           path: src-tauri/target/release/bundle/
           if-no-files-found: warn

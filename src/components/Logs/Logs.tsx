@@ -32,6 +32,8 @@ const Logs = memo(() => {
   const [errorLogs, setErrorLogs] = useState<string[]>([]);
   const [accessError, setAccessError] = useState<string | null>(null);
   const [errorError, setErrorError] = useState<string | null>(null);
+  const [accessPaths, setAccessPaths] = useState<string[]>([]);
+  const [errorPaths, setErrorPaths] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [rawMode, setRawMode] = useState(false);
   const { toast } = useToast();
@@ -56,6 +58,7 @@ const Logs = memo(() => {
           console.log("✅ Access logs data:", accessData);
           console.log("📝 Access logs count:", accessData.logs?.length || 0);
           setAccessLogs(accessData.logs || []);
+          setAccessPaths(accessData.paths || (accessData.path ? [accessData.path] : []));
           setAccessError(null); // Clear any previous errors
           console.log("✅ Access logs state updated");
         } else {
@@ -90,6 +93,7 @@ const Logs = memo(() => {
           console.log("✅ Error logs data:", errorData);
           console.log("📝 Error logs count:", errorData.logs?.length || 0);
           setErrorLogs(errorData.logs || []);
+          setErrorPaths(errorData.paths || (errorData.path ? [errorData.path] : []));
           setErrorError(null); // Clear any previous errors
           console.log("✅ Error logs state updated");
         } else {
@@ -132,10 +136,18 @@ const Logs = memo(() => {
 
       const unlistenAccess = listen("access_event", handleAccessEvent);
       const unlistenError = listen("error_event", handleErrorEvent);
+      const unlistenAccessErr = listen("access_log_error", (event: LogEvent) => {
+        setAccessError(event.payload);
+      });
+      const unlistenErrorErr = listen("error_log_error", (event: LogEvent) => {
+        setErrorError(event.payload);
+      });
 
       return () => {
         unlistenAccess.then((unlistenFn: any) => unlistenFn());
         unlistenError.then((unlistenFn: any) => unlistenFn());
+        unlistenAccessErr.then((unlistenFn: any) => unlistenFn());
+        unlistenErrorErr.then((unlistenFn: any) => unlistenFn());
       };
     } else {
       // Use HTTP API in browser mode
@@ -271,7 +283,8 @@ const Logs = memo(() => {
     logs: string[],
     title: string,
     icon: React.ReactNode,
-    errorMessage?: string | null
+    errorMessage?: string | null,
+    sourcePaths: string[] = []
   ) => {
     console.log(`🔍 Rendering ${title}:`, {
       logsCount: logs.length,
@@ -289,6 +302,11 @@ const Logs = memo(() => {
               ({logs.length} entries)
             </span>
           </CardTitle>
+          {sourcePaths.length > 0 && (
+            <p className="text-xs text-muted-foreground break-all">
+              {sourcePaths.join(" · ")}
+            </p>
+          )}
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-[500px] w-full">
@@ -404,7 +422,8 @@ const Logs = memo(() => {
           filteredAccessLogs,
           "Access Logs",
           <Activity className="h-5 w-5 text-blue-500" />,
-          accessError
+          accessError,
+          accessPaths
         )}
 
         {/* Error Events */}
@@ -412,7 +431,8 @@ const Logs = memo(() => {
           filteredErrorLogs,
           "Error Logs",
           <AlertTriangle className="h-5 w-5 text-red-500" />,
-          errorError
+          errorError,
+          errorPaths
         )}
       </div>
     </div>
