@@ -10,6 +10,7 @@ mod commands;
 mod config;
 mod events_service;
 mod logging;
+mod nginx_logs;
 mod systemd;
 mod util;
 
