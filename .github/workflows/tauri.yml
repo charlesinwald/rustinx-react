@@ -55,8 +55,11 @@ jobs:
       #       curl \
       #       openssl
 
+      - name: Enable Corepack
+        run: corepack enable
+
       - name: Install dependencies
-        run: yarn install # or npm install
+        run: yarn install
 
       - name: Cache Rust build
         uses: actions/cache@v4
