@@ -78,23 +78,32 @@ pub fn extract_log_directives(config: &str, log_type: &str) -> Vec<LogDestinatio
 
     let mut destinations = Vec::new();
     for raw_line in config.lines() {
-        let line = strip_inline_comment(raw_line).trim().trim_end_matches(';').trim();
-        if line.is_empty() {
-            continue;
+        let line = strip_inline_comment(raw_line);
+        destinations.extend(extract_log_directives_from_line(line, directive));
+    }
+    destinations
+}
+
+fn extract_log_directives_from_line(line: &str, directive: &str) -> Vec<LogDestination> {
+    // Directives may share a line with braces, e.g. `location /health { access_log off; }`.
+    let normalized = line.replace(['{', '}', ';'], " ");
+    let tokens: Vec<&str> = normalized
+        .split_whitespace()
+        .map(|t| t.trim_matches(|c| c == '"' || c == '\''))
+        .filter(|t| !t.is_empty())
+        .collect();
+
+    let mut destinations = Vec::new();
+    let mut i = 0;
+    while i < tokens.len() {
+        if tokens[i] == directive {
+            if let Some(target) = tokens.get(i + 1) {
+                destinations.push(classify_destination(target));
+            }
+            i += 2;
+        } else {
+            i += 1;
         }
-        let mut parts = line.split_whitespace();
-        let name = match parts.next() {
-            Some(name) => name,
-            None => continue,
-        };
-        if name != directive {
-            continue;
-        }
-        let Some(target) = parts.next() else {
-            continue;
-        };
-        let target = target.trim_matches(|c| c == '"' || c == '\'');
-        destinations.push(classify_destination(target));
     }
     destinations
 }
