@@ -11,9 +11,9 @@ use std::path::Path;
 async fn check_session(session: Session) -> Result<HttpResponse, Error> {
     let logged_in = session.get::<bool>("logged_in")?.unwrap_or(false);
     if crate::auth::is_authenticated_session(logged_in, get_stored_password().is_some()) {
-        return Ok(HttpResponse::Ok().finish());
+        return Ok(HttpResponse::Ok().json(serde_json::json!({ "authenticated": true })));
     }
-    Ok(HttpResponse::Unauthorized().finish())
+    Ok(HttpResponse::Unauthorized().json(serde_json::json!({ "authenticated": false })))
 }
 
 fn execute_sudo_command_with_stored_password(args: Vec<&str>) -> Result<std::process::Output, String> {

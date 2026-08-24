@@ -18,42 +18,17 @@ lazy_static::lazy_static! {
 }
 
 pub async fn login(session: Session, req: web::Json<LoginRequest>) -> Result<HttpResponse, Error> {
-    // Test the sudo password by running a simple command
-    let mut child = Command::new("sudo")
-        .arg("-S")
-        .arg("echo")
-        .arg("hello")
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .map_err(|e| actix_web::error::ErrorInternalServerError(e.to_string()))?;
-
-    if let Some(mut stdin) = child.stdin.take() {
-        stdin
-            .write_all(format!("{}\n", req.password).as_bytes())
-            .map_err(|e| actix_web::error::ErrorInternalServerError(e.to_string()))?;
-    }
-
-    let output = child
-        .wait_with_output()
-        .map_err(|e| actix_web::error::ErrorInternalServerError(e.to_string()))?;
-
-    if output.status.success() {
-        // Store the password for future use
-        if let Ok(mut store) = PASSWORD_STORE.lock() {
-            store.insert("sudo_password".to_string(), req.password.clone());
+    match verify_and_store_sudo_password(&req.password) {
+        Ok(()) => {
+            session.insert("logged_in", true)?;
+            Ok(HttpResponse::Ok().json(serde_json::json!({
+                "success": true
+            })))
         }
-
-        session.insert("logged_in", true)?;
-        Ok(HttpResponse::Ok().json(serde_json::json!({
-            "success": true
-        })))
-    } else {
-        Ok(HttpResponse::Unauthorized().json(serde_json::json!({
+        Err(_) => Ok(HttpResponse::Unauthorized().json(serde_json::json!({
             "success": false,
             "error": "Invalid sudo password"
-        })))
+        }))),
     }
 }
 
@@ -71,6 +46,34 @@ pub fn get_stored_password() -> Option<String> {
     } else {
         None
     }
+}
+
+pub fn verify_and_store_sudo_password(password: &str) -> Result<(), String> {
+    let mut child = Command::new("sudo")
+        .arg("-S")
+        .arg("echo")
+        .arg("hello")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|e| e.to_string())?;
+
+    if let Some(mut stdin) = child.stdin.take() {
+        stdin
+            .write_all(format!("{}\n", password).as_bytes())
+            .map_err(|e| e.to_string())?;
+    }
+
+    let output = child.wait_with_output().map_err(|e| e.to_string())?;
+    if !output.status.success() {
+        return Err("Invalid sudo password".to_string());
+    }
+
+    if let Ok(mut store) = PASSWORD_STORE.lock() {
+        store.insert("sudo_password".to_string(), password.to_string());
+    }
+    Ok(())
 }
 
 pub fn is_authenticated_session(logged_in: bool, password_stored: bool) -> bool {

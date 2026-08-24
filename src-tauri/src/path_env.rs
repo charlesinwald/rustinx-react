@@ -75,6 +75,25 @@ pub fn brew_service_requires_root_sudo(stderr: &str) -> bool {
         || lower.contains("try: sudo brew services")
 }
 
+/// Quote a path/argument for `/bin/sh` as used by `osascript` `do shell script`.
+pub fn shell_single_quote(value: &str) -> String {
+    format!("'{}'", value.replace('\'', "'\\''"))
+}
+
+pub fn macos_brew_services_command(brew_path: &str, action: &str) -> String {
+    format!(
+        "{} services {} nginx",
+        shell_single_quote(brew_path),
+        action
+    )
+}
+
+/// AppleScript that shows the standard macOS administrator password dialog.
+pub fn macos_admin_shell_script(command: &str) -> String {
+    let escaped = command.replace('\\', "\\\\").replace('"', "\\\"");
+    format!("do shell script \"{escaped}\" with administrator privileges")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -161,5 +180,16 @@ mod tests {
         assert!(!crate::auth::is_authenticated_session(true, false));
         assert!(crate::auth::is_authenticated_session(true, true));
         assert!(!crate::auth::is_authenticated_session(false, true));
+    }
+
+    #[test]
+    fn macos_admin_script_prompts_with_quoted_brew_path() {
+        let command = macos_brew_services_command("/opt/homebrew/bin/brew", "stop");
+        assert_eq!(command, "'/opt/homebrew/bin/brew' services stop nginx");
+
+        let script = macos_admin_shell_script(&command);
+        assert!(script.contains("with administrator privileges"));
+        assert!(script.contains("do shell script"));
+        assert!(script.contains("/opt/homebrew/bin/brew"));
     }
 }

@@ -55,12 +55,48 @@ pub fn macos_nginx_service(action: &str) -> Result<std::process::Output, String>
     }
 
     let brew_path = brew.to_string_lossy().into_owned();
-    execute_sudo_command_with_stored_password(&[
-        brew_path.as_str(),
-        "services",
-        action,
-        "nginx",
-    ])
+    if get_stored_password().is_some() {
+        return execute_sudo_command_with_stored_password(&[
+            brew_path.as_str(),
+            "services",
+            action,
+            "nginx",
+        ]);
+    }
+
+    let command = crate::path_env::macos_brew_services_command(&brew_path, action);
+    execute_macos_admin_command(&command)
+}
+
+fn execute_macos_admin_command(command: &str) -> Result<std::process::Output, String> {
+    let script = crate::path_env::macos_admin_shell_script(command);
+    let output = Command::new("osascript")
+        .arg("-e")
+        .arg(script)
+        .output()
+        .map_err(|e| e.to_string())?;
+
+    if output.status.success() {
+        return Ok(output);
+    }
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let lower = stderr.to_lowercase();
+    if lower.contains("canceled") || lower.contains("cancelled") || stderr.contains("-128") {
+        return Err("Administrator authentication was canceled".to_string());
+    }
+    Err(format!("Administrator authentication failed: {stderr}"))
+}
+
+#[tauri::command]
+pub(crate) fn has_sudo_password() -> bool {
+    get_stored_password().is_some()
+}
+
+#[tauri::command]
+pub(crate) fn verify_sudo_password(password: String) -> Result<bool, String> {
+    crate::auth::verify_and_store_sudo_password(&password)?;
+    Ok(true)
 }
 
 #[tauri::command]
