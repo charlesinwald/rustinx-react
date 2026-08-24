@@ -3449,7 +3449,7 @@ dependencies = [
 
 [[package]]
 name = "rustinx"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "actix-cors",
  "actix-session",
