@@ -11,6 +11,9 @@ cleanup_ports() {
     sudo lsof -ti:1234 | xargs sudo kill -9 2>/dev/null || true
     sudo lsof -ti:3000 | xargs sudo kill -9 2>/dev/null || true
     sudo lsof -ti:8081 | xargs sudo kill -9 2>/dev/null || true
+    # Tauri mode runs Parcel via sudo, so a leftover root-owned LMDB cache
+    # fails the next build with "Key ... not found in cache".
+    sudo rm -rf .parcel-cache 2>/dev/null || true
 }
 
 # Cleanup on exit

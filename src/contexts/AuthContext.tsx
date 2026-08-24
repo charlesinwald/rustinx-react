@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import apiClient from '../api/axiosInstance';
 
+const isTauri = typeof window !== 'undefined' && (window as any).__TAURI__;
+const invoke = isTauri ? require("@tauri-apps/api/tauri").invoke : null;
+
 interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -23,11 +26,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     console.log('🔍 Starting authentication check...');
     
     try {
+      if (isTauri && invoke) {
+        const hasPassword = await invoke<boolean>('has_sudo_password');
+        setIsAuthenticated(!!hasPassword);
+        return;
+      }
+
       console.log('🌐 Making session check request...');
       const response = await apiClient.get('/session');
       console.log('📊 Session check response status:', response.status);
       
-      const isAuth = response.status === 200;
+      const isAuth = response.status === 200 && response.data?.authenticated === true;
       console.log('🔐 Setting authentication state:', isAuth);
       setIsAuthenticated(isAuth);
     } catch (error) {
@@ -42,6 +51,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (password: string): Promise<boolean> => {
     try {
+      if (isTauri && invoke) {
+        await invoke('verify_sudo_password', { password });
+        setIsAuthenticated(true);
+        return true;
+      }
+
       console.log('Attempting login with password:', password.substring(0, 3) + '***');
       const response = await apiClient.post('/login', { password });
       console.log('Login response:', response);

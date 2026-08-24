@@ -28,6 +28,43 @@ pub(crate) fn monitor_nginx_log(path: &str, label: &str, app: AppHandle) -> std:
     }
 }
 
+fn nginx_config_check_message(success: bool, stdout: &str, stderr: &str) -> String {
+    let combined = format!("{stderr}{stdout}");
+    if success || nginx_syntax_ok_despite_unwritable_logs(&combined) {
+        "Nginx configuration is valid.".to_string()
+    } else {
+        format!("Nginx configuration error: {}", stderr)
+    }
+}
+
+fn nginx_syntax_ok_despite_unwritable_logs(output: &str) -> bool {
+    if !output.contains("syntax is ok") {
+        return false;
+    }
+
+    output.lines().all(|line| {
+        let line = line.trim();
+        line.is_empty() || is_ignorable_nginx_test_line(line)
+    })
+}
+
+fn is_ignorable_nginx_test_line(line: &str) -> bool {
+    let lower = line.to_lowercase();
+    if lower.contains("syntax is ok")
+        || lower.contains("test failed")
+        || lower.contains("test is successful")
+    {
+        return true;
+    }
+
+    if !lower.contains("permission denied") {
+        return false;
+    }
+
+    lower.contains("could not open error log file")
+        || (lower.contains("open()") && line.contains(".log"))
+}
+
 fn check_nginx_config(app: AppHandle) {
     thread::spawn(move || loop {
         // Execute `nginx -t` to check the configuration
@@ -36,13 +73,9 @@ fn check_nginx_config(app: AppHandle) {
             .output()
             .expect("Failed to execute command");
 
-        // Prepare the message based on the command's success or failure
-        let message = if output.status.success() {
-            "Nginx configuration is valid.".to_string()
-        } else {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            format!("Nginx configuration error: {}", stderr)
-        };
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let message = nginx_config_check_message(output.status.success(), &stdout, &stderr);
 
         // Emit the result to the frontend
         app.emit_all("nginx_config_check", &message)
@@ -203,4 +236,64 @@ pub(crate) fn check_nginx_status(app: AppHandle) {
 
         thread::sleep(Duration::from_secs(5));
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const HOMEBREW_LOG_PERMISSION_STDERR: &str = "\
+nginx: [alert] could not open error log file: open() \"/opt/homebrew/var/log/nginx/error.log\" failed (13: Permission denied)
+nginx: the configuration file /opt/homebrew/etc/nginx/nginx.conf syntax is ok
+2026/08/24 16:49:12 [emerg] 71594#0: open() \"/opt/homebrew/var/log/nginx/access.log\" failed (13: Permission denied)
+nginx: configuration file /opt/homebrew/etc/nginx/nginx.conf test failed
+";
+
+    #[test]
+    fn homebrew_unwritable_logs_with_valid_syntax_are_not_a_config_error() {
+        let message = nginx_config_check_message(false, "", HOMEBREW_LOG_PERMISSION_STDERR);
+        assert_eq!(message, "Nginx configuration is valid.");
+    }
+
+    #[test]
+    fn successful_nginx_t_is_valid() {
+        let stderr = "\
+nginx: the configuration file /opt/homebrew/etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /opt/homebrew/etc/nginx/nginx.conf test is successful
+";
+        assert_eq!(
+            nginx_config_check_message(true, "", stderr),
+            "Nginx configuration is valid."
+        );
+    }
+
+    #[test]
+    fn syntax_error_is_still_a_config_error() {
+        let stderr = "\
+nginx: [alert] could not open error log file: open() \"/opt/homebrew/var/log/nginx/error.log\" failed (13: Permission denied)
+nginx: [emerg] unexpected \"}\" in /opt/homebrew/etc/nginx/nginx.conf:12
+nginx: configuration file /opt/homebrew/etc/nginx/nginx.conf test failed
+";
+        let message = nginx_config_check_message(false, "", stderr);
+        assert!(
+            message.starts_with("Nginx configuration error:"),
+            "expected a config error, got {message}"
+        );
+        assert!(message.contains("unexpected"));
+    }
+
+    #[test]
+    fn syntax_ok_with_unrelated_emerg_is_still_a_config_error() {
+        let stderr = "\
+nginx: the configuration file /opt/homebrew/etc/nginx/nginx.conf syntax is ok
+nginx: [emerg] cannot load certificate \"/etc/ssl/certs/foo.pem\": BIO_new_file() failed
+nginx: configuration file /opt/homebrew/etc/nginx/nginx.conf test failed
+";
+        let message = nginx_config_check_message(false, "", stderr);
+        assert!(
+            message.starts_with("Nginx configuration error:"),
+            "expected a config error, got {message}"
+        );
+        assert!(message.contains("cannot load certificate"));
+    }
 }

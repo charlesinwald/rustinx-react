@@ -11,11 +11,13 @@ mod config;
 mod events_service;
 mod logging;
 mod nginx_logs;
+mod path_env;
 mod systemd;
 mod util;
 
 #[tokio::main]
 async fn main() {
+    path_env::ensure_unix_command_path();
     std::env::set_var("GDK_BACKEND", "x11");
     std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
 
@@ -104,7 +106,9 @@ async fn main() {
             config::modify_nginx_service,
             config::reload_and_restart_nginx_service,
             util::check_sudo_status,
-            systemd::get_systemd_logs
+            systemd::get_systemd_logs,
+            commands::has_sudo_password,
+            commands::verify_sudo_password
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

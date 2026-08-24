@@ -14,9 +14,9 @@ fn execute_sudo_command(args: Vec<&str>) -> Result<std::process::Output, String>
         .map_err(|e| e.to_string())
 }
 
-fn execute_sudo_command_with_stored_password(args: Vec<&str>) -> Result<std::process::Output, String> {
-    let password = get_stored_password().ok_or("No sudo password stored")?;
-    
+fn execute_sudo_command_with_stored_password(args: &[&str]) -> Result<std::process::Output, String> {
+    let password = get_stored_password().ok_or("No sudo password stored. Please log in again.")?;
+
     let mut child = Command::new("sudo")
         .arg("-S")
         .args(args)
@@ -35,16 +35,75 @@ fn execute_sudo_command_with_stored_password(args: Vec<&str>) -> Result<std::pro
     child.wait_with_output().map_err(|e| e.to_string())
 }
 
+pub fn macos_nginx_service(action: &str) -> Result<std::process::Output, String> {
+    let brew = crate::path_env::resolve_command("brew").ok_or_else(|| {
+        "brew not found. Install Homebrew nginx from https://brew.sh".to_string()
+    })?;
+
+    let user_output = Command::new(&brew)
+        .args(["services", action, "nginx"])
+        .output()
+        .map_err(|e| e.to_string())?;
+
+    if user_output.status.success() {
+        return Ok(user_output);
+    }
+
+    let stderr = String::from_utf8_lossy(&user_output.stderr);
+    if !crate::path_env::brew_service_requires_root_sudo(&stderr) {
+        return Ok(user_output);
+    }
+
+    let brew_path = brew.to_string_lossy().into_owned();
+    if get_stored_password().is_some() {
+        return execute_sudo_command_with_stored_password(&[
+            brew_path.as_str(),
+            "services",
+            action,
+            "nginx",
+        ]);
+    }
+
+    let command = crate::path_env::macos_brew_services_command(&brew_path, action);
+    execute_macos_admin_command(&command)
+}
+
+fn execute_macos_admin_command(command: &str) -> Result<std::process::Output, String> {
+    let script = crate::path_env::macos_admin_shell_script(command);
+    let output = Command::new("osascript")
+        .arg("-e")
+        .arg(script)
+        .output()
+        .map_err(|e| e.to_string())?;
+
+    if output.status.success() {
+        return Ok(output);
+    }
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let lower = stderr.to_lowercase();
+    if lower.contains("canceled") || lower.contains("cancelled") || stderr.contains("-128") {
+        return Err("Administrator authentication was canceled".to_string());
+    }
+    Err(format!("Administrator authentication failed: {stderr}"))
+}
+
+#[tauri::command]
+pub(crate) fn has_sudo_password() -> bool {
+    get_stored_password().is_some()
+}
+
+#[tauri::command]
+pub(crate) fn verify_sudo_password(password: String) -> Result<bool, String> {
+    crate::auth::verify_and_store_sudo_password(&password)?;
+    Ok(true)
+}
+
 #[tauri::command]
 pub(crate) fn restart_nginx() -> Result<String, String> {
     let output = match OS {
         "linux" => execute_sudo_command(vec!["systemctl", "restart", "nginx"])?,
-        "macos" => Command::new("brew")
-            .arg("services")
-            .arg("restart")
-            .arg("nginx")
-            .output()
-            .map_err(|e| e.to_string())?,
+        "macos" => macos_nginx_service("restart")?,
         _ => return Err("Unsupported OS".into()),
     };
 
@@ -62,12 +121,7 @@ pub(crate) fn restart_nginx() -> Result<String, String> {
 pub(crate) fn start_nginx() -> Result<String, String> {
     let output = match OS {
         "linux" => execute_sudo_command(vec!["systemctl", "start", "nginx"])?,
-        "macos" => Command::new("brew")
-            .arg("services")
-            .arg("start")
-            .arg("nginx")
-            .output()
-            .map_err(|e| e.to_string())?,
+        "macos" => macos_nginx_service("start")?,
         _ => return Err("Unsupported OS".into()),
     };
 
@@ -85,12 +139,7 @@ pub(crate) fn start_nginx() -> Result<String, String> {
 pub(crate) fn stop_nginx() -> Result<String, String> {
     let output = match OS {
         "linux" => execute_sudo_command(vec!["systemctl", "stop", "nginx"])?,
-        "macos" => Command::new("brew")
-            .arg("services")
-            .arg("stop")
-            .arg("nginx")
-            .output()
-            .map_err(|e| e.to_string())?,
+        "macos" => macos_nginx_service("stop")?,
         _ => return Err("Unsupported OS".into()),
     };
 

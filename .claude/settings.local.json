@@ -40,7 +40,12 @@
       "Bash(magick /tmp/rustinx_master.png -resize 2400x2156 -background 'srgb\\(255,236,203\\)' -gravity center -extent 2400x2156 -depth 8 /Users/charles/Code/rustinx-react/src/logo.png)",
       "Bash(magick 32x32.png -scale 800% /tmp/check_32.png)",
       "Bash(magick Square30x30Logo.png -scale 800% /tmp/check_30.png)",
-      "Bash(magick icon.png -scale 20% /tmp/check_512.png)"
+      "Bash(magick icon.png -scale 20% /tmp/check_512.png)",
+      "Bash(identify 32x32.png icon.png icon.icns)",
+      "Bash(identify \"icon.ico\")",
+      "Bash(magick 32x32.png -background '#1d2021' -flatten -scale 800% /tmp/check_32_rounded.png)",
+      "Bash(magick Square30x30Logo.png -background '#1d2021' -flatten -scale 800% /tmp/check_30_rounded.png)",
+      "Bash(git status *)"
     ],
     "deny": [],
     "ask": []
