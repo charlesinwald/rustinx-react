@@ -345,11 +345,11 @@ const Config: React.FC = () => {
 
   return (
     <TooltipProvider>
-      <div className="space-y-6 p-6">
+      <div className="space-y-6 p-6 [--muted-foreground:35_25%_72%]">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
+            <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
               <Settings className="h-8 w-8" />
               NGINX Configuration
             </h1>
@@ -424,7 +424,7 @@ const Config: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground break-all">
+                    <p className="text-sm text-foreground/80 break-all">
                       {nginxConfig.buildInfo}
                     </p>
                     <Button
@@ -464,7 +464,7 @@ const Config: React.FC = () => {
                       )}
                     </div>
                     {nginxConfig.tlsSupport && (
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-foreground/80">
                         {nginxConfig.tlsSupport}
                       </p>
                     )}
@@ -588,8 +588,8 @@ const Config: React.FC = () => {
               {Object.entries(groupedArgs).map(([category, args]) => (
                 <Card key={category}>
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-lg">{category}</CardTitle>
-                    <CardDescription>
+                    <CardTitle className="text-lg text-foreground">{category}</CardTitle>
+                    <CardDescription className="text-foreground/70">
                       {args.length} arguments in this category
                     </CardDescription>
                   </CardHeader>
@@ -620,9 +620,9 @@ const Config: React.FC = () => {
                                       )
                                     }
                                     disabled={!isTauri}
-                                    className={`font-mono text-sm ${
+                                    className={`font-mono text-sm text-foreground disabled:opacity-100 disabled:text-foreground ${
                                       arg.isModified ? "border-orange-300" : ""
-                                    } ${!isTauri ? "bg-muted" : ""}`}
+                                    } ${!isTauri ? "bg-background" : ""}`}
                                   />
                                   {arg.isModified && (
                                     <Badge
@@ -633,7 +633,7 @@ const Config: React.FC = () => {
                                     </Badge>
                                   )}
                                 </div>
-                                <p className="text-xs text-muted-foreground">
+                                <p className="text-xs text-foreground/75">
                                   {arg.description}
                                 </p>
                               </div>

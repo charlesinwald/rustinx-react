@@ -152,7 +152,7 @@ export default function NginxStatus() {
   const StatusIcon = statusConfig.icon;
 
   return (
-    <Card className="w-full">
+    <Card className="w-full min-w-0 overflow-hidden">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-sm font-medium">
           <Server className="h-4 w-4" />
@@ -160,11 +160,11 @@ export default function NginxStatus() {
         </CardTitle>
       </CardHeader>
 
-      <CardContent className="space-y-4 bg-background p-4">
+      <CardContent className="space-y-4 bg-background p-4 min-w-0">
         {/* Status Display */}
         <div
           className={cn(
-            "flex items-center justify-between rounded-lg border p-3 bg-muted"
+            "flex items-center justify-between rounded-lg border p-3 bg-muted",
           )}
         >
           <div className="flex items-center gap-2">
@@ -172,7 +172,7 @@ export default function NginxStatus() {
               className={cn(
                 "h-4 w-4",
                 statusConfig.color,
-                nginxStatus === "Checking..." && "animate-spin"
+                nginxStatus === "Checking..." && "animate-spin",
               )}
             />
           </div>
@@ -189,9 +189,7 @@ export default function NginxStatus() {
               <h4 className="text-sm font-medium text-muted-foreground">
                 Configuration Event
               </h4>
-              <p className="text-sm bg-muted p-2 rounded">
-                {configEvent}
-              </p>
+              <p className="text-sm bg-muted p-2 rounded">{configEvent}</p>
             </div>
           </>
         )}
@@ -200,24 +198,24 @@ export default function NginxStatus() {
         {nginxConfigPath && (
           <>
             <Separator />
-            <div className="space-y-2">
+            <div className="space-y-2 min-w-0">
               <h4 className="text-sm font-medium text-muted-foreground">
                 Configuration File
               </h4>
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full justify-start gap-2 h-auto p-2 bg-transparent"
+                className="w-full max-w-full min-w-0 justify-start gap-2 h-auto p-2 bg-transparent hover:bg-secondary hover:text-foreground whitespace-normal overflow-hidden"
                 onClick={() => openFile(nginxConfigPath)}
               >
-                <FileText className="h-4 w-4" />
-                <div className="flex-1 text-left">
+                <FileText className="h-4 w-4 shrink-0" />
+                <div className="flex-1 text-left min-w-0 overflow-hidden">
                   <div className="text-xs font-medium">Open Config</div>
-                  <div className="text-xs text-muted-foreground truncate">
+                  <div className="text-xs font-mono text-foreground/85 break-all">
                     {nginxConfigPath}
                   </div>
                 </div>
-                <ExternalLink className="h-3 w-3" />
+                <ExternalLink className="h-3 w-3 shrink-0" />
               </Button>
             </div>
           </>

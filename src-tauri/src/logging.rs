@@ -1,18 +1,11 @@
-use std::io::BufRead;
-use std::process::Command;
-
+use std::env::consts::OS;
+use std::fs::File;
+use std::io::{BufRead, BufReader};
+use std::process::{Command, Stdio};
+use std::thread;
 use std::time::Duration;
 
-use std::thread;
-
-use std::io::BufReader;
-
-use std::fs::File;
-
-use std;
 use tauri::{AppHandle, Manager};
-use std::env::consts::OS;
-
 
 pub(crate) fn monitor_nginx_log(path: &str, label: &str, app: AppHandle) -> std::io::Result<()> {
     let file = File::open(path)?;
@@ -60,45 +53,116 @@ fn check_nginx_config(app: AppHandle) {
     });
 }
 
-pub(crate) fn start_log_monitoring(app_handle: AppHandle) {
-    // Determine the correct log paths based on the OS
-    let (access_log_path, error_log_path) = match OS {
-        "macos" => (
-            "/usr/local/var/log/nginx/access.log", // Common path on macOS with Homebrew Nginx
-            "/usr/local/var/log/nginx/error.log",
-        ),
-        "linux" => (
-            "/var/log/nginx/access.log", // Common path on Linux
-            "/var/log/nginx/error.log",
-        ),
-        _ => {
-            eprintln!("Unsupported OS");
-            return;
+fn log_file_readable(path: &str) -> bool {
+    crate::nginx_logs::log_file_readable(path)
+}
+
+fn resolve_nginx_log_paths() -> (Option<String>, Option<String>) {
+    (
+        crate::nginx_logs::find_readable_nginx_log("access"),
+        crate::nginx_logs::find_readable_nginx_log("error"),
+    )
+}
+
+fn spawn_macos_log_stream() -> std::io::Result<std::process::Child> {
+    let predicate = r#"process == "nginx""#;
+    let mut command = Command::new("log");
+    command
+        .args(["stream", "--predicate", predicate])
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+
+    match command.spawn() {
+        Ok(child) => Ok(child),
+        Err(_) => {
+            // -n avoids hanging on a password prompt in a GUI app
+            Command::new("sudo")
+                .args(["-n", "log", "stream", "--predicate", predicate])
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .spawn()
         }
-    };
+    }
+}
 
-    let app_handle_for_access_log = app_handle.clone();
+fn monitor_macos_unified_log(
+    app: AppHandle,
+    emit_access: bool,
+    emit_error: bool,
+) -> std::io::Result<()> {
+    let mut child = spawn_macos_log_stream()?;
+    let stdout = child.stdout.take().ok_or_else(|| {
+        std::io::Error::new(
+            std::io::ErrorKind::BrokenPipe,
+            "failed to capture macOS log stream stdout",
+        )
+    })?;
+    let reader = BufReader::new(stdout);
+
+    for line in reader.lines() {
+        let line = line?;
+        if line.trim().is_empty() {
+            continue;
+        }
+        if emit_access {
+            app.emit_all("access_event", &line)
+                .expect("Failed to emit log event");
+        }
+        if emit_error {
+            app.emit_all("error_event", &line)
+                .expect("Failed to emit log event");
+        }
+    }
+
+    Ok(())
+}
+
+pub(crate) fn start_log_monitoring(app_handle: AppHandle) {
+    let (access_log_path, error_log_path) = resolve_nginx_log_paths();
+    let access_ok = access_log_path
+        .as_deref()
+        .map(log_file_readable)
+        .unwrap_or(false);
+    let error_ok = error_log_path
+        .as_deref()
+        .map(log_file_readable)
+        .unwrap_or(false);
+
+    if let Some(path) = access_log_path.filter(|_| access_ok) {
+        let app_handle_for_access_log = app_handle.clone();
+        thread::spawn(move || {
+            monitor_nginx_log(&path, "access_event", app_handle_for_access_log)
+                .unwrap_or_else(|e| eprintln!("Log monitoring error: {}", e));
+        });
+    }
+
+    if let Some(path) = error_log_path.filter(|_| error_ok) {
+        let app_handle_for_error_log = app_handle.clone();
+        thread::spawn(move || {
+            monitor_nginx_log(&path, "error_event", app_handle_for_error_log)
+                .unwrap_or_else(|e| eprintln!("Log monitoring error: {}", e));
+        });
+    }
+
+    if OS == "macos" && (!access_ok || !error_ok) {
+        let app_handle_for_stream = app_handle.clone();
+        thread::spawn(move || {
+            eprintln!(
+                "Nginx log files unavailable (access readable: {}, error readable: {}); falling back to macOS unified log stream",
+                access_ok, error_ok
+            );
+            if let Err(e) = monitor_macos_unified_log(app_handle_for_stream, !access_ok, !error_ok)
+            {
+                eprintln!("macOS log stream error: {}", e);
+            }
+        });
+    }
+
     let app_handle_for_config_check = app_handle.clone();
-    let app_handle_for_status_check = app_handle.clone();
-    
-    // Spawn a thread for monitoring access logs
-    std::thread::spawn(move || {
-        monitor_nginx_log(access_log_path, "access_event", app_handle_for_access_log)
-            .unwrap_or_else(|e| eprintln!("Log monitoring error: {}", e));
-    });
-
-    // Spawn a thread for monitoring error logs
-    let app_handle_for_error_log = app_handle;
-    std::thread::spawn(move || {
-        monitor_nginx_log(error_log_path, "error_event", app_handle_for_error_log)
-            .unwrap_or_else(|e| eprintln!("Log monitoring error: {}", e));
-    });
-
-    // Start checking Nginx configuration and status
+    let app_handle_for_status_check = app_handle;
     check_nginx_config(app_handle_for_config_check);
     check_nginx_status(app_handle_for_status_check);
 }
-
 
 pub(crate) fn check_nginx_status(app: AppHandle) {
     thread::spawn(move || loop {
@@ -140,4 +204,3 @@ pub(crate) fn check_nginx_status(app: AppHandle) {
         thread::sleep(Duration::from_secs(5));
     });
 }
-

@@ -23,7 +23,7 @@ export default function Sidebar({
   currentView,
 }: SidebarProps) {
   return (
-    <div className="flex h-full w-64 flex-col border-r bg-background">
+    <div className="flex h-full w-64 min-w-0 shrink-0 flex-col overflow-hidden border-r bg-background">
       {/* Header */}
       <div className="flex h-16 items-center border-b px-6">
         <h2 className="text-xl text-foreground font-extrabold">Rustinx</h2>
@@ -58,7 +58,7 @@ export default function Sidebar({
       <Separator />
 
       {/* Status Section */}
-      <div className="p-4">
+      <div className="p-4 min-w-0">
         <NginxStatus />
       </div>
     </div>

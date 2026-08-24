@@ -470,7 +470,7 @@ async fn get_nginx_logs_http(
 
 fn find_nginx_log_path(log_type: &str) -> Result<String, String> {
     use std::path::Path;
-    
+
     // First, check if nginx was compiled with stderr/stdout logging
     if let Ok(build_info) = get_nginx_build_config() {
         if build_info.contains("--error-log-path=stderr") && log_type == "error" {
@@ -483,29 +483,26 @@ fn find_nginx_log_path(log_type: &str) -> Result<String, String> {
             return Err("Nginx is configured to log access to stdout. Access logs are not available as files when logging to stdout. You can view nginx access logs using 'journalctl -u nginx' or by checking your process manager logs.".to_string());
         }
     }
-    
-    // Try common nginx config locations
-    let config_paths = [
-        "/etc/nginx/nginx.conf",
-        "/usr/local/etc/nginx/nginx.conf",
-        "/opt/nginx/nginx.conf",
-        "/usr/local/nginx/conf/nginx.conf",
-    ];
 
-    let mut config_path = None;
-    for path in &config_paths {
-        if Path::new(path).exists() {
-            config_path = Some(*path);
-            break;
+    let config_paths = rustinx::nginx_logs::nginx_conf_file_candidates();
+    let config_path = config_paths.iter().find(|path| Path::new(path).exists());
+
+    if let Some(config_path) = config_path {
+        match parse_nginx_config_for_logs(config_path, log_type) {
+            Ok(path) if Path::new(&path).exists() => return Ok(path),
+            Ok(_) => {}
+            Err(e) if rustinx::nginx_logs::is_log_policy_error(&e) => return Err(e),
+            Err(_) => {}
         }
     }
 
-    let config_path = config_path.ok_or_else(|| {
-        format!("Could not find nginx.conf in any of these locations: {:?}", config_paths)
-    })?;
-
-    // Read and parse nginx.conf to find log directives
-    parse_nginx_config_for_logs(config_path, log_type)
+    rustinx::nginx_logs::find_readable_nginx_log(log_type).ok_or_else(|| {
+        format!(
+            "Could not find {} log file. Checked config at {} and common locations including Homebrew, MacPorts, and source-install log directories",
+            log_type,
+            config_path.map(String::as_str).unwrap_or("unknown")
+        )
+    })
 }
 
 fn get_nginx_build_config() -> Result<String, String> {

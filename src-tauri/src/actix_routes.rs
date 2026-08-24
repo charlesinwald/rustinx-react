@@ -230,28 +230,25 @@ fn find_nginx_log_path(log_type: &str) -> Result<String, String> {
         }
     }
 
-    // Try common nginx config locations
-    let config_paths = [
-        "/etc/nginx/nginx.conf",
-        "/usr/local/etc/nginx/nginx.conf",
-        "/opt/nginx/nginx.conf",
-        "/usr/local/nginx/conf/nginx.conf",
-    ];
+    let config_paths = crate::nginx_logs::nginx_conf_file_candidates();
+    let config_path = config_paths.iter().find(|path| Path::new(path).exists());
 
-    let mut config_path = None;
-    for path in &config_paths {
-        if Path::new(path).exists() {
-            config_path = Some(*path);
-            break;
+    if let Some(config_path) = config_path {
+        match parse_nginx_config_for_logs(config_path, log_type) {
+            Ok(path) if Path::new(&path).exists() => return Ok(path),
+            Ok(_) => {}
+            Err(e) if crate::nginx_logs::is_log_policy_error(&e) => return Err(e),
+            Err(_) => {}
         }
     }
 
-    let config_path = config_path.ok_or_else(|| {
-        format!("Could not find nginx.conf in any of these locations: {:?}", config_paths)
-    })?;
-
-    // Read and parse nginx.conf to find log directives
-    parse_nginx_config_for_logs(config_path, log_type)
+    crate::nginx_logs::find_readable_nginx_log(log_type).ok_or_else(|| {
+        format!(
+            "Could not find {} log file. Checked config at {} and common locations including Homebrew, MacPorts, and source-install log directories",
+            log_type,
+            config_path.map(String::as_str).unwrap_or("unknown")
+        )
+    })
 }
 
 fn get_nginx_build_config() -> Result<String, String> {
@@ -332,20 +329,10 @@ fn parse_nginx_config_for_logs(config_path: &str, log_type: &str) -> Result<Stri
         }
     }
 
-    // Return default paths if not found in config
-    let default_path = match log_type {
-        "access" => "/var/log/nginx/access.log",
-        "error" => "/var/log/nginx/error.log",
-        _ => return Err("Invalid log type".to_string()),
-    };
-
-    // Check if default exists
-    if Path::new(default_path).exists() {
-        Ok(default_path.to_string())
-    } else {
-        Err(format!("Could not find {} log file. Checked config at {} and default location {}", 
-                   log_type, config_path, default_path))
-    }
+    Err(format!(
+        "Could not find {} log file. Checked config at {} and default location /var/log/nginx/{}.log",
+        log_type, config_path, log_type
+    ))
 }
 
 fn search_included_configs(base_config: &str, include_pattern: &str, log_type: &str) -> Result<String, String> {

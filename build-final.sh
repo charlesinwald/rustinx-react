@@ -7,8 +7,10 @@ set -e
 echo "🔨 Building final Rustinx deployment package..."
 
 # Go to root directory
-cd /home/charles/Code/rustinx-react
-
+# cd /home/charles/Code/rustinx-react
+# dynamically get the path to the react app
+REACT_APP_PATH=$(pwd)
+cd $REACT_APP_PATH
 # Build frontend
 echo "📦 Building frontend..."
 yarn run build
