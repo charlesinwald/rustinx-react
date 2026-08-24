@@ -52,6 +52,29 @@ pub fn ensure_unix_command_path() {
     std::env::set_var("PATH", augment_path(&current, &extra));
 }
 
+pub fn resolve_command_on_path(name: &str, path: &str) -> Option<std::path::PathBuf> {
+    path.split(':').find_map(|dir| {
+        if dir.is_empty() {
+            return None;
+        }
+        let candidate = std::path::Path::new(dir).join(name);
+        candidate.is_file().then_some(candidate)
+    })
+}
+
+pub fn resolve_command(name: &str) -> Option<std::path::PathBuf> {
+    let current = std::env::var("PATH").unwrap_or_default();
+    let augmented = augment_path(&current, &extra_unix_bin_dirs());
+    resolve_command_on_path(name, &augmented)
+}
+
+pub fn brew_service_requires_root_sudo(stderr: &str) -> bool {
+    let lower = stderr.to_lowercase();
+    lower.contains("started as `root`")
+        || lower.contains("started as 'root'")
+        || lower.contains("try: sudo brew services")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -121,5 +144,22 @@ mod tests {
             command_on_path("brew", &augmented).as_deref(),
             Some(brew)
         );
+    }
+
+    #[test]
+    fn detects_root_owned_brew_service_error() {
+        let stderr =
+            "Error: Service `nginx` is started as `root`. Try: sudo brew services stop nginx\n";
+        assert!(brew_service_requires_root_sudo(stderr));
+        assert!(!brew_service_requires_root_sudo(
+            "Error: Formula nginx is not installed."
+        ));
+    }
+
+    #[test]
+    fn cookie_session_is_not_authenticated_without_stored_sudo_password() {
+        assert!(!crate::auth::is_authenticated_session(true, false));
+        assert!(crate::auth::is_authenticated_session(true, true));
+        assert!(!crate::auth::is_authenticated_session(false, true));
     }
 }

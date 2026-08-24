@@ -9,10 +9,9 @@ use std::process::Stdio;
 use std::path::Path;
 
 async fn check_session(session: Session) -> Result<HttpResponse, Error> {
-    if let Some(logged_in) = session.get::<bool>("logged_in")? {
-        if logged_in {
-            return Ok(HttpResponse::Ok().finish());
-        }
+    let logged_in = session.get::<bool>("logged_in")?.unwrap_or(false);
+    if crate::auth::is_authenticated_session(logged_in, get_stored_password().is_some()) {
+        return Ok(HttpResponse::Ok().finish());
     }
     Ok(HttpResponse::Unauthorized().finish())
 }
@@ -41,12 +40,7 @@ fn execute_sudo_command_with_stored_password(args: Vec<&str>) -> Result<std::pro
 fn start_nginx_browser() -> Result<String, String> {
     let output = match OS {
         "linux" => execute_sudo_command_with_stored_password(vec!["systemctl", "start", "nginx"])?,
-        "macos" => Command::new("brew")
-            .arg("services")
-            .arg("start")
-            .arg("nginx")
-            .output()
-            .map_err(|e| e.to_string())?,
+        "macos" => commands::macos_nginx_service("start")?,
         _ => return Err("Unsupported OS".into()),
     };
 
@@ -62,12 +56,7 @@ fn start_nginx_browser() -> Result<String, String> {
 fn stop_nginx_browser() -> Result<String, String> {
     let output = match OS {
         "linux" => execute_sudo_command_with_stored_password(vec!["systemctl", "stop", "nginx"])?,
-        "macos" => Command::new("brew")
-            .arg("services")
-            .arg("stop")
-            .arg("nginx")
-            .output()
-            .map_err(|e| e.to_string())?,
+        "macos" => commands::macos_nginx_service("stop")?,
         _ => return Err("Unsupported OS".into()),
     };
 
@@ -83,12 +72,7 @@ fn stop_nginx_browser() -> Result<String, String> {
 fn restart_nginx_browser() -> Result<String, String> {
     let output = match OS {
         "linux" => execute_sudo_command_with_stored_password(vec!["systemctl", "restart", "nginx"])?,
-        "macos" => Command::new("brew")
-            .arg("services")
-            .arg("restart")
-            .arg("nginx")
-            .output()
-            .map_err(|e| e.to_string())?,
+        "macos" => commands::macos_nginx_service("restart")?,
         _ => return Err("Unsupported OS".into()),
     };
 

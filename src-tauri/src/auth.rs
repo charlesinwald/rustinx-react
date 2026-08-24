@@ -58,10 +58,9 @@ pub async fn login(session: Session, req: web::Json<LoginRequest>) -> Result<Htt
 }
 
 pub async fn authenticated(session: Session) -> Result<HttpResponse, Error> {
-    if let Some(logged_in) = session.get::<bool>("logged_in")? {
-        if logged_in {
-            return Ok(HttpResponse::Ok().finish());
-        }
+    let logged_in = session.get::<bool>("logged_in")?.unwrap_or(false);
+    if is_authenticated_session(logged_in, get_stored_password().is_some()) {
+        return Ok(HttpResponse::Ok().finish());
     }
     Ok(HttpResponse::Unauthorized().finish())
 }
@@ -72,4 +71,8 @@ pub fn get_stored_password() -> Option<String> {
     } else {
         None
     }
+}
+
+pub fn is_authenticated_session(logged_in: bool, password_stored: bool) -> bool {
+    logged_in && password_stored
 }
