@@ -1,13 +1,18 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { Meteors } from "./ui/meteors";
 import { Eye, EyeOff } from "lucide-react";
+
 
 const Login: React.FC = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const MeteorsMemo = useMemo(() => {
+    return <Meteors number={40} key={Math.random()} />;
+  }, []);
+
   const { login } = useAuth();
 
   const handleLogin = async () => {
@@ -109,7 +114,7 @@ const Login: React.FC = () => {
           </div>
         </div>
       </div>
-      <Meteors number={20} />
+      {MeteorsMemo}
     </div>
   );
 };
