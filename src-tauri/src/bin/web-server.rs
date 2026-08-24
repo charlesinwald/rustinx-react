@@ -794,6 +794,7 @@ fn format_datetime_macos(datetime: &str) -> String {
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
+    rustinx::path_env::ensure_unix_command_path();
     env_logger::init();
 
     println!("Starting Rustinx web server on http://0.0.0.0:8081");
