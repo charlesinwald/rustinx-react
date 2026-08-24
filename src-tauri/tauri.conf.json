@@ -8,9 +8,9 @@
   },
   "package": {
     "productName": "rustinx",
-    "version": "0.1.3"
+    "version": "0.1.4"
   },
-  "tauri": {    
+  "tauri": {
     "allowlist": {
       "all": false,
       "window": {
@@ -49,7 +49,6 @@
         "digestAlgorithm": "sha256",
         "timestampUrl": ""
       }
-
     },
     "security": {
       "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: tauri: asset: https://asset.localhost http://asset.localhost; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost https://ipc.localhost http://localhost:* http://127.0.0.1:* http://0.0.0.0:* ws://localhost:* ws://127.0.0.1:* ws://0.0.0.0:*; frame-ancestors 'none'"
