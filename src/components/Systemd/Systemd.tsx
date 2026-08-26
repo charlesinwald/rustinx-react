@@ -224,22 +224,50 @@ const Systemd: React.FC = memo(() => {
     });
   };
 
-  const exportLogs = () => {
+  const exportLogs = async () => {
     const logContent = logs.join("\n");
-    const blob = new Blob([logContent], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${serviceName}-logs-${
+    const filename = `${serviceName}-logs-${
       new Date().toISOString().split("T")[0]
     }.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
 
-    toast({
-      title: "Export complete",
-      description: "Logs exported successfully",
-    });
+    try {
+      if (isTauri && invoke) {
+        const saved = await invoke<boolean>("export_systemd_logs", {
+          contents: logContent,
+          defaultFilename: filename,
+        });
+        if (!saved) {
+          return;
+        }
+      } else {
+        const blob = new Blob([logContent], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      toast({
+        title: "Export complete",
+        description: "Logs exported successfully",
+      });
+    } catch (err) {
+      const errorMessage =
+        typeof err === "string"
+          ? err
+          : err instanceof Error
+            ? err.message
+            : "Failed to export logs.";
+      toast({
+        title: "Export failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
   };
 
   const copyToClipboard = (text: string) => {

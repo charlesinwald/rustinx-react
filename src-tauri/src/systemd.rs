@@ -1,6 +1,7 @@
 use std::process::Command;
 use serde::Deserialize;
 use std::env::consts::OS;
+use std::path::Path;
 
 #[derive(Debug, Deserialize)]
 pub struct SystemdLogOptions {
@@ -120,6 +121,68 @@ fn format_datetime(datetime: &str) -> String {
         format!("{} 00:00:00", datetime)
     } else {
         datetime.to_string()
+    }
+}
+
+pub(crate) fn write_export_file(path: &Path, contents: &str) -> Result<(), String> {
+    std::fs::write(path, contents).map_err(|e| format!("Failed to write export file: {e}"))
+}
+
+#[tauri::command]
+pub async fn export_systemd_logs(
+    window: tauri::Window,
+    contents: String,
+    default_filename: String,
+) -> Result<bool, String> {
+    let Some(path) = tauri::api::dialog::blocking::FileDialogBuilder::new()
+        .set_parent(&window)
+        .set_file_name(&default_filename)
+        .add_filter("Text", &["txt"])
+        .save_file()
+    else {
+        return Ok(false);
+    };
+
+    write_export_file(&path, &contents)?;
+    Ok(true)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use std::path::PathBuf;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn temp_export_path(name: &str) -> PathBuf {
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("clock went backwards")
+            .as_nanos();
+        std::env::temp_dir().join(format!("rustinx-{name}-{nanos}.txt"))
+    }
+
+    #[test]
+    fn write_export_file_writes_log_contents() {
+        let path = temp_export_path("export");
+        let contents = "Aug 26 12:00:00 nginx: started\nAug 26 12:00:01 nginx: ready";
+
+        write_export_file(&path, contents).expect("export write should succeed");
+
+        let written = fs::read_to_string(&path).expect("exported file should be readable");
+        let _ = fs::remove_file(&path);
+        assert_eq!(written, contents);
+    }
+
+    #[test]
+    fn write_export_file_errors_when_parent_directory_is_missing() {
+        let path = std::env::temp_dir()
+            .join("rustinx-missing-export-dir")
+            .join("does-not-exist")
+            .join("logs.txt");
+
+        let result = write_export_file(&path, "logs");
+        assert!(result.is_err(), "expected an error, got {result:?}");
     }
 }
 

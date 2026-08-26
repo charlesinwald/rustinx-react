@@ -107,6 +107,7 @@ async fn main() {
             config::reload_and_restart_nginx_service,
             util::check_sudo_status,
             systemd::get_systemd_logs,
+            systemd::export_systemd_logs,
             commands::has_sudo_password,
             commands::verify_sudo_password
         ])
