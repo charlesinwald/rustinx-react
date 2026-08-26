@@ -75,6 +75,60 @@ pub fn brew_service_requires_root_sudo(stderr: &str) -> bool {
         || lower.contains("try: sudo brew services")
 }
 
+/// `brew services start` tries `launchctl bootstrap` even when the LaunchAgent is
+/// already loaded (loaded-but-dead after nginx exited). That fails with error 5.
+pub fn brew_service_already_loaded(output: &str) -> bool {
+    let lower = output.to_lowercase();
+    lower.contains("bootstrap failed")
+        || (lower.contains("launchctl bootstrap") && lower.contains("exited with 5"))
+}
+
+pub fn macos_brew_action_is_complete(action: &str, command_ok: bool, nginx_running: bool) -> bool {
+    if !command_ok {
+        return false;
+    }
+    match action {
+        "start" | "restart" => nginx_running,
+        _ => true,
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BrewFollowup {
+    Done,
+    RetryRestart,
+    Elevate,
+    PromptAdmin,
+    Failed,
+}
+
+/// Decide the next Homebrew nginx service step after a user-level `brew services` attempt.
+pub fn macos_brew_followup(
+    action: &str,
+    command_ok: bool,
+    nginx_running: bool,
+    can_elevate: bool,
+    output: &str,
+) -> BrewFollowup {
+    if macos_brew_action_is_complete(action, command_ok, nginx_running) {
+        return BrewFollowup::Done;
+    }
+
+    if action == "start" && brew_service_already_loaded(output) {
+        return BrewFollowup::RetryRestart;
+    }
+
+    if can_elevate {
+        return BrewFollowup::Elevate;
+    }
+
+    if brew_service_requires_root_sudo(output) || brew_service_already_loaded(output) {
+        return BrewFollowup::PromptAdmin;
+    }
+
+    BrewFollowup::Failed
+}
+
 /// Quote a path/argument for `/bin/sh` as used by `osascript` `do shell script`.
 pub fn shell_single_quote(value: &str) -> String {
     format!("'{}'", value.replace('\'', "'\\''"))
@@ -173,6 +227,64 @@ mod tests {
         assert!(!brew_service_requires_root_sudo(
             "Error: Formula nginx is not installed."
         ));
+    }
+
+    #[test]
+    fn detects_launchctl_bootstrap_error_when_agent_already_loaded() {
+        let stderr = "Bootstrap failed: 5: Input/output error\n\
+             Try re-running the command as root for richer errors.\n\
+             Error: Failure while executing; `/bin/launchctl bootstrap gui/501 \
+             /Users/charles/Library/LaunchAgents/homebrew.mxcl.nginx.plist` exited with 5.\n";
+        assert!(brew_service_already_loaded(stderr));
+        assert!(!brew_service_already_loaded(
+            "Error: Formula nginx is not installed."
+        ));
+        assert!(!brew_service_requires_root_sudo(stderr));
+    }
+
+    #[test]
+    fn start_is_incomplete_when_brew_succeeds_but_nginx_is_not_running() {
+        assert!(macos_brew_action_is_complete("start", true, true));
+        assert!(!macos_brew_action_is_complete("start", true, false));
+        assert!(!macos_brew_action_is_complete("start", false, false));
+        assert!(macos_brew_action_is_complete("restart", true, true));
+        assert!(!macos_brew_action_is_complete("restart", true, false));
+        assert!(macos_brew_action_is_complete("stop", true, false));
+        assert!(!macos_brew_action_is_complete("stop", false, true));
+    }
+
+    #[test]
+    fn brew_service_should_retry_restart_then_elevate_for_bootstrap_5() {
+        assert_eq!(
+            macos_brew_followup("start", false, false, true, "Bootstrap failed: 5: Input/output error"),
+            BrewFollowup::RetryRestart
+        );
+        assert_eq!(
+            macos_brew_followup("start", true, false, true, ""),
+            BrewFollowup::Elevate
+        );
+        assert_eq!(
+            macos_brew_followup("start", true, true, true, ""),
+            BrewFollowup::Done
+        );
+        assert_eq!(
+            macos_brew_followup("stop", false, false, true, "started as `root`"),
+            BrewFollowup::Elevate
+        );
+        assert_eq!(
+            macos_brew_followup("stop", false, false, false, "started as `root`"),
+            BrewFollowup::PromptAdmin
+        );
+        assert_eq!(
+            macos_brew_followup(
+                "start",
+                false,
+                false,
+                false,
+                "Error: Formula nginx is not installed."
+            ),
+            BrewFollowup::Failed
+        );
     }
 
     #[test]

@@ -3,7 +3,11 @@ use sysinfo::System;
 use std::process::{Command, Stdio};
 use std::env::consts::OS;
 use std::io::Write;
+use std::path::Path;
+use std::thread;
+use std::time::{Duration, Instant};
 use crate::auth::get_stored_password;
+use crate::path_env::{BrewFollowup, macos_brew_followup};
 
 fn execute_sudo_command(args: Vec<&str>) -> Result<std::process::Output, String> {
     // For Tauri (desktop mode), let sudo prompt for password directly
@@ -35,37 +39,125 @@ fn execute_sudo_command_with_stored_password(args: &[&str]) -> Result<std::proce
     child.wait_with_output().map_err(|e| e.to_string())
 }
 
+fn run_brew_services(brew: &Path, action: &str) -> Result<std::process::Output, String> {
+    Command::new(brew)
+        .args(["services", action, "nginx"])
+        .output()
+        .map_err(|e| e.to_string())
+}
+
+fn command_output_text(output: &std::process::Output) -> String {
+    format!(
+        "{}{}",
+        String::from_utf8_lossy(&output.stderr),
+        String::from_utf8_lossy(&output.stdout)
+    )
+}
+
+fn nginx_process_running() -> bool {
+    Command::new("pgrep")
+        .args(["-x", "nginx"])
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .map(|s| s.success())
+        .unwrap_or(false)
+}
+
+fn wait_for_nginx_process(timeout: Duration) -> bool {
+    let deadline = Instant::now() + timeout;
+    loop {
+        if nginx_process_running() {
+            return true;
+        }
+        if Instant::now() >= deadline {
+            return false;
+        }
+        thread::sleep(Duration::from_millis(100));
+    }
+}
+
+fn nginx_running_after_brew_action(action: &str, command_ok: bool) -> bool {
+    if action != "start" && action != "restart" {
+        return false;
+    }
+    if command_ok {
+        wait_for_nginx_process(Duration::from_millis(1500))
+    } else {
+        nginx_process_running()
+    }
+}
+
+fn elevate_brew_services(
+    brew_path: &str,
+    action: &str,
+) -> Result<std::process::Output, String> {
+    execute_sudo_command_with_stored_password(&[brew_path, "services", action, "nginx"])
+}
+
 pub fn macos_nginx_service(action: &str) -> Result<std::process::Output, String> {
     let brew = crate::path_env::resolve_command("brew").ok_or_else(|| {
         "brew not found. Install Homebrew nginx from https://brew.sh".to_string()
     })?;
-
-    let user_output = Command::new(&brew)
-        .args(["services", action, "nginx"])
-        .output()
-        .map_err(|e| e.to_string())?;
-
-    if user_output.status.success() {
-        return Ok(user_output);
-    }
-
-    let stderr = String::from_utf8_lossy(&user_output.stderr);
-    if !crate::path_env::brew_service_requires_root_sudo(&stderr) {
-        return Ok(user_output);
-    }
-
     let brew_path = brew.to_string_lossy().into_owned();
-    if get_stored_password().is_some() {
-        return execute_sudo_command_with_stored_password(&[
-            brew_path.as_str(),
-            "services",
-            action,
-            "nginx",
-        ]);
-    }
 
-    let command = crate::path_env::macos_brew_services_command(&brew_path, action);
-    execute_macos_admin_command(&command)
+    let mut current_action = action.to_string();
+    let mut retried_restart = false;
+    let mut output = run_brew_services(&brew, action)?;
+
+    loop {
+        let nginx_running = nginx_running_after_brew_action(&current_action, output.status.success());
+        let can_elevate = get_stored_password().is_some();
+        let mut followup = macos_brew_followup(
+            &current_action,
+            output.status.success(),
+            nginx_running,
+            can_elevate,
+            &command_output_text(&output),
+        );
+
+        if followup == BrewFollowup::RetryRestart && retried_restart {
+            followup = if can_elevate {
+                BrewFollowup::Elevate
+            } else {
+                BrewFollowup::PromptAdmin
+            };
+        }
+
+        match followup {
+            BrewFollowup::Done => return Ok(output),
+            BrewFollowup::RetryRestart => {
+                retried_restart = true;
+                current_action = "restart".to_string();
+                output = run_brew_services(&brew, "restart")?;
+            }
+            BrewFollowup::Elevate => {
+                if action == "start" || action == "restart" {
+                    let _ = run_brew_services(&brew, "stop");
+                }
+                let elevated = elevate_brew_services(&brew_path, action)?;
+                if (action == "start" || action == "restart")
+                    && elevated.status.success()
+                    && !wait_for_nginx_process(Duration::from_millis(1500))
+                {
+                    return Err(
+                        "Homebrew reported that nginx started, but the process exited immediately. \
+                         Check the nginx error log and that log files under Homebrew's nginx \
+                         directory are writable."
+                            .to_string(),
+                    );
+                }
+                return Ok(elevated);
+            }
+            BrewFollowup::PromptAdmin => {
+                let prompt_action = if action == "start" { "restart" } else { action };
+                let command =
+                    crate::path_env::macos_brew_services_command(&brew_path, prompt_action);
+                return execute_macos_admin_command(&command);
+            }
+            BrewFollowup::Failed => return Ok(output),
+        }
+    }
 }
 
 fn execute_macos_admin_command(command: &str) -> Result<std::process::Output, String> {
