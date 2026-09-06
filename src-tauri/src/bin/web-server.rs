@@ -784,12 +784,7 @@ fn get_macos_systemd_logs(options: &SystemdLogOptions) -> Result<String, String>
 }
 
 fn format_datetime_macos(datetime: &str) -> String {
-    if datetime.len() == 10 {
-        // If the datetime only includes the date (YYYY-MM-DD), append a time
-        format!("{} 00:00:00", datetime)
-    } else {
-        datetime.to_string()
-    }
+    rustinx::systemd::format_datetime(datetime)
 }
 
 #[tokio::main]

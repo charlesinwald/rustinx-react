@@ -114,12 +114,39 @@ fn get_macos_logs(options: SystemdLogOptions) -> Result<String, String> {
     }
 }
 
-fn format_datetime(datetime: &str) -> String {
-    if datetime.len() == 10 {
-        // If the datetime only includes the date (YYYY-MM-DD), append a time
-        format!("{} 00:00:00", datetime)
-    } else {
-        datetime.to_string()
+pub fn format_datetime(datetime: &str) -> String {
+    let datetime = datetime.trim().replace('T', " ");
+    match datetime.len() {
+        10 => format!("{datetime} 00:00:00"),
+        16 => format!("{datetime}:00"),
+        _ if datetime.len() > 19 => datetime.chars().take(19).collect(),
+        _ => datetime,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn format_datetime_converts_datetime_local_without_seconds() {
+        assert_eq!(
+            format_datetime("2026-08-25T13:43"),
+            "2026-08-25 13:43:00"
+        );
+    }
+
+    #[test]
+    fn format_datetime_keeps_seconds_and_replaces_t() {
+        assert_eq!(
+            format_datetime("2026-08-25T13:43:09"),
+            "2026-08-25 13:43:09"
+        );
+    }
+
+    #[test]
+    fn format_datetime_appends_midnight_for_date_only() {
+        assert_eq!(format_datetime("2026-08-25"), "2026-08-25 00:00:00");
     }
 }
 
